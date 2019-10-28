@@ -4,7 +4,10 @@ import os
 import http.cookies
 import funct
 import sql
+import cgitb
 from jinja2 import Environment, FileSystemLoader
+cgitb.enable()
+
 env = Environment(loader=FileSystemLoader('templates/'), autoescape=True)
 template = env.get_template('config.html')
 
@@ -59,14 +62,19 @@ if serv is not None and form.getvalue('config') is not None:
 		pass
 		
 	config = form.getvalue('config')
+	funct.logging(serv, 'config: '+ config)
 	oldcfg = form.getvalue('oldconfig')
+	funct.logging(serv, 'oldconfig: ' + oldcfg)
 	save = form.getvalue('save')
 	aftersave = 1
 	try:
 		with open(cfg, "a") as conf:
 			conf.write(config)
+		funct.logging(serv, 'after writing new configuration')
 	except IOError:
 		error = "Can't read import config file"
+	except:
+		funct.logging(serv, 'unexpected error: ' + sys.exc_info()[0])
 		
 	stderr = funct.master_slave_upload_and_restart(serv, cfg, just_save=save)
 		

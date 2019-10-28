@@ -483,12 +483,13 @@ def upload_and_restart(serv, cfg, **kwargs):
 		
 		
 def master_slave_upload_and_restart(serv, cfg, just_save):
+	logging(serv, 'master_slave_upload_and_restart')
 	import sql
 	MASTERS = sql.is_master(serv)
 	for master in MASTERS:
 		if master[0] != None:
 			upload_and_restart(master[0], cfg, just_save=just_save)
-		
+			logging(serv, 'upload_and_restart ' + master[0])		
 	return upload_and_restart(serv, cfg, just_save=just_save)
 	
 		
