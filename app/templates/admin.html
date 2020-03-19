@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-{% from 'include/input_macros.html' import input %}
+{% from 'include/input_macros.html' import input, select %}
 <style>
 .container {
 	margin-right: 0;
@@ -18,45 +18,25 @@
 		<li><a href="#checker">Checker</a></li>
 		<li><a href="#settings">Settings</a></li>
 		<li><a href="#updatehapwi">Update</a></li>
+		<li><a href="#backup">Backup</a></li>
 		{% include 'include/login.html' %}
 	</ul>
+	<ul id='browse_histroy'></ul>
 	<div id="users">
 		<table class="overview" id="ajax-users">
+			<thead>
 			<tr class="overviewHead">
-				<td class="padding10 first-collumn">Login name</td>
-				<td>Password</td>
-				<td>Active</td>
-				<td>Email</td>
-				<td>Role</td>
-				<td>Group</td>
-				<td></td>
-				<td></td>
+				<th class="padding10 first-collumn">Login name</th>
+				<th>Password</th>
+				<th>Active</th>
+				<th>Email</th>
+				<th>Role</th>
+				<th>Group</th>
+				<th></th>
+				<th></th>
 			</tr>
-			<tr>
-			<script>
-				$( function() {
-				{% for user in users %}
-					$("#role-{{user.0}}" ).selectmenu({
-						  width: 100
-						});
-					$("#usergroup-{{user.0}}" ).selectmenu({
-						  width: 100
-						});
-					
-				{% endfor %}
-				{% for server in servers %}
-					$("#servergroup-{{ server.0}}" ).selectmenu({
-						  width: 100
-						});
-					$("#slavefor-{{server.0}}" ).selectmenu({
-						  width: 130
-						});
-					$("#credentials-{{server.0}}" ).selectmenu({
-						  width: 150
-						});
-				{% endfor %}
-				});
-			</script>
+			</thead>
+			<tbody>
 		{% for user in users %}
 			<tr id="user-{{user.0}}" class="{{ loop.cycle('odd', 'even') }}">
 				{% include 'include/admin_users.html' %}
@@ -92,17 +72,20 @@
 				</td> 
 			</tr>
 		{% endfor %}
+		<tbody>
 		</table>
 		<br /><span class="add-button" title="Add user" id="add-user-button">+ Add</span>
 		<br /><br />
 	</div>
 	<div id="groups">
 		<table class="overview" id="ajax-group">
+			<thead>
 			<tr class="overviewHead">
-				<td class="padding10 first-collumn">Name</td>
-				<td>Description</td>
-				<td></td>
+				<th class="padding10 first-collumn">Name</th>
+				<th>Description</th>
+				<th></th>
 			</tr>
+			<tbody>
 		{% for group in groups %}
 			<tr id="group-{{ group.0 }}" class="{{ loop.cycle('odd', 'even') }}"> 
 			{% if group.1 == "All" %}
@@ -126,6 +109,7 @@
 			{% endif %}
 			</tr>
 		{% endfor %}
+			</tbody>
 		</table>
 		<br /><span class="add-button" title="Add group" id="add-group-button">+ Add</span>
 		<br /><br />
@@ -139,7 +123,7 @@
 				<td class="padding10 first-collumn">
 					{{ input('new-group-add') }}
 				</td>
-				<td>
+				<td style="width: 100%;">
 					{{ input('new-desc', size="60") }}
 				</td>
 				<td>
@@ -153,29 +137,31 @@
 	</div>
 	<div id="servers">
 		<table class="overview" id="ajax-servers">
+			<thead>
 			<tr class="overviewHead">
-				<td class="padding10 first-collumn">Hostname</td>
-				<td class="ip-field">IP</td>
-				<td class="checkbox-head"><span title="SSH port">Port</span></td></td>
-				<td class="group-field">Group</td>
-				<td class="checkbox-head">Enable</td>
-				<td class="checkbox-head"><span title="Vitrual IP, something like VRRP">Virt</span></td>
-				<td class="checkbox-head"><span title="Alert if backend change status. Before enable add Telgram chanel at Checker tab">Alert</span></td>
-				<td class="checkbox-head"><span title="Enable save and show metrics">Metrics</span></td>
-				<td class="checkbox-head"><span title="Keep start HAProxy service if down">Start</span></td>
-				<td class="slave-field"><span title="Actions with master config will automatically apply on slave">Slave for</span></td>
-				<td class="cred-field">Credentials</td>
-				<td>Description</td>
-				<td></td>
-				<td></td>
-			</tr>						
+				<th class="padding10 first-collumn">Hostname</th>
+				<th class="ip-field">IP</th>
+				<th class="checkbox-head"><span title="SSH port">Port</span></th>
+				<th class="group-field">Group</th>
+				<th class="checkbox-head">Enable</th>
+				<th class="checkbox-head"><span title="Vitrual IP, something like VRRP">Virt</span></th>
+				<th class="checkbox-head">HAProxy</th>
+				<th class="checkbox-head">Nginx</th>
+				<th class="slave-field"><span title="Actions with master config will automatically apply on slave">Slave for</span></th>
+				<th class="cred-field">Credentials</th>
+				<th>Description</th>
+				<th></th>
+				<th></th>
+			</tr>	
+			</thead>
+			<tbody>
 		{% for server in servers %}
 			<tr id="server-{{server.0}}" class="{{ loop.cycle('odd', 'even') }}">
 				<td class="padding10 first-collumn">
 					<input type="text" id="hostname-{{server.0}}" value="{{server.1}}" class="form-control">
 				</td>
 				<td>
-					<input type="text" id="ip-{{server.0}}" value="{{server.2}}" size="14" class="form-control">
+					<span id="ip-{{server.0}}" style="margin-right: 6px;">{{server.2}}</span>
 				</td>
 				<td>
 					<input type="text" id="port-{{server.0}}" value="{{server.10}}" size="1" class="form-control">
@@ -195,9 +181,11 @@
 				{% include 'include/admin_servers.html' %}
 			</tr>
 		{% endfor %}
+			</tbody>
 		</table>
 		<br /><span class="add-button" title="Add server" id="add-server-button">+ Add</span>
 		<br /><br />
+		<div id="checkSshConnect"></div>
 		<div class="add-note addName alert-info" style="width: inherit; margin-right: 15px;">
 			You can read the description of all parameters <a href="https://haproxy-wi.org/description.py?description=servers" title="Servers description" target="_blank">here</a>
 			or watch video <a href="https://haproxy-wi.org/description.py?description=setup" title="How to setup servers, group and SSH credentials" target="_blank">here</a>
@@ -485,6 +473,32 @@
 		</div>
 		<div id="ajax-update"></div>
 	</div>
+	
+	<div id="backup">
+		<table class="overview" id="ajax-backup-table">
+			<tr class="overviewHead">
+				<td class="padding10 first-collumn">Servers</td>
+				<td class="padding10">Remote server</td>
+				<td class="padding10">Remote folder</td>
+				<td class="padding10">Backup type</td>
+				<td class="padding10">Period time</td>
+				<td class="padding10">Credentials</td>
+				<td class="padding10">Description</td>
+				<td></td>
+				<td></td>
+			</tr>
+			{% for b in backups %}
+				{% include 'include/admin_backup.html' %}
+			{% endfor %}
+		</table>
+		<br /><span class="add-button" title="Add a new backup job" id="add-backup-button">+ Add a new backup job</span>
+		<br /><br />
+		<div id="ajax-backup"></div>
+		<div class="add-note addName alert-info" style="width: inherit; margin-right: 15px;">
+			You can read the description of all parameters <a href="https://haproxy-wi.org/description.py?description=backup" title="Backup description" target="_blank">here</a>
+		</div>
+	</div>
+	
 </div>
 <div id="user-add-table" style="display: none;">	
 	<table class="overview">
@@ -519,7 +533,7 @@
 		</tr>
 	</table>
 </div>
-<div id="server-add-table" title="View certificate " style="display: none;">	
+<div id="server-add-table" title="Add a new server " style="display: none;">	
 	<table class="overview">
 		{% include 'include/admin_add_server.html' %}
 		<tr>
@@ -553,6 +567,33 @@
 		
 	</table>
 </div>	
+<div id="backup-add-table" title="Add a new backup job " style="display: none;">	
+	<table class="overview">
+		{% include 'include/add_backup.html' %}
+		<tr>
+			<td class="padding20">
+				Credentials for remote server
+				<span class="need-field">*</span>
+			</td>
+			<td>
+				<select id="backup-credentials" required>
+					<option disabled selected>Choose credentials</option>
+					{% for ssh in sshs %}
+						<option value="{{ssh.0}}">{{ssh.1}}</option>
+					{% endfor %}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td class="padding20">
+				Description
+			</td>
+			<td>
+				{{ input('backup-description', size='30') }}
+			</td>
+		</tr>
+	</table>
+</div>
 {% include 'include/change_pass_form.html' %}
 <style>
 .ui-selectmenu-button.ui-button {
@@ -562,4 +603,46 @@
     width: 10%;
 }
 </style>
+<script>
+				$( function() {
+				{% for user in users %}
+					$("#role-{{user.0}}" ).selectmenu({
+						  width: 100
+						});
+					$("#usergroup-{{user.0}}" ).selectmenu({
+						  width: 100
+						});
+					
+				{% endfor %}
+				{% for server in servers %}
+					$("#servergroup-{{ server.0}}" ).selectmenu({
+						  width: 100
+						});
+					$("#slavefor-{{server.0}}" ).selectmenu({
+						  width: 130
+						});
+					$("#credentials-{{server.0}}" ).selectmenu({
+						  width: 150
+						});
+				{% endfor %}
+				{% for ssh in sshs %}
+					if (window.matchMedia('(max-width: 1280px)').matches) {
+						$("#sshgroup-{{ ssh.0}}" ).selectmenu({
+							width: 100
+						});
+					}
+				{% endfor %}
+				{% for server in backups %}
+					$("#backup-time-{{ server.0}}" ).selectmenu({
+						  width: 100
+						});
+					$("#backup-type-{{server.0}}" ).selectmenu({
+						  width: 130
+						});
+					$("#backup-credentials-{{server.0}}" ).selectmenu({
+						  width: 150
+						});
+				{% endfor %}
+				});
+			</script>
 {% endblock %}

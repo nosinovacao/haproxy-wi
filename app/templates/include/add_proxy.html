@@ -1,4 +1,13 @@
-<div id="create" style="height: 95%;">
+{% if add %}
+	<div class="alert alert-success" style="position: absolute;top: 45px;left: 5px;">	
+		<div id="close">
+			<span title="Close" style="cursor: pointer; float: right;">X</span>
+		</div>
+		<h3>{{ add }} was success added</h3>
+		{{ conf_add }}
+	</div>
+{% endif %}
+<div id="create" style="height: 95%; margin-top: 20px;">
 		<div id="left-collumn">
 			<div class="div-pannel">
 				<div class="div-server">
@@ -38,6 +47,16 @@
 					</div>
 					<div class="server-desc">
 							Create HTTPS Proxy without the SSL termination on HAProxy and SSL offload. HAProxy will send to backends HTTPS traffic
+					</div>				
+				</div>
+			</div>
+			<div class="div-pannel">
+				<div class="div-server">
+					<div class="server-name">
+						<span title="Create presaved options" class="span-link" id="add4">Create presaved options</span>
+					</div>
+					<div class="server-desc">
+						Create, edit and delete options with given parameters. And after use them as autocomplete in the "Add" sections
 					</div>				
 				</div>
 			</div>
@@ -83,6 +102,16 @@
 					</div>				
 				</div>
 			</div>
+			<div class="div-pannel">
+				<div class="div-server">
+					<div class="server-name">
+						<span title="Create presaved servers" class="span-link" id="add5">Create presaved servers</span>
+					</div>
+					<div class="server-desc">
+						Create, edit and delete servers. And after use them as autocomplete in the "Add" sections 
+					</div>				
+				</div>
+			</div>
 		</div>
 		<div id="right-collumn">
 			<div class="div-pannel">
@@ -125,11 +154,15 @@
 					</div>				
 				</div>
 			</div>
+			<div class="div-pannel">
+				<div class="div-server">
+					<div class="server-name">
+						<span title="Create userlists" class="span-link" id="add6">Create userlists</span>
+					</div>
+					<div class="server-desc">
+							Create userlists. And use it in the "Add" sections 
+					</div>				
+				</div>
+			</div>
 		</div>
-		{% if add %}
-		<div class="alert alert-success" style="margin-left: 20px; clear: both;">	
-			<h3>{{ add }} was success added</h3>
-			{{ conf_add }}
-		</div>
-		{% endif %}
 	</div>

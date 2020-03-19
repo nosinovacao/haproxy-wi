@@ -6,7 +6,7 @@ function getChartData(server) {
 			server: server,
 			token: $('#token').val()
 		},
-		type: "GET",
+		type: "POST",
         success: function (result) {    
             var data = [];
             data.push(result.chartData.curr_con);
@@ -47,6 +47,7 @@ function renderChart(data, labels, server) {
             ]
         },
         options: {
+			maintainAspectRatio: false,
 			title: {
 				display: true,
 				text: data[3],
@@ -63,7 +64,9 @@ function renderChart(data, labels, server) {
 			legend: {
 				display: true,
 				labels: {
-					fontColor: 'rgb(255, 99, 132)'
+					fontColor: 'rgb(255, 99, 132)',
+					defaultFontSize: '10',
+					defaultFontFamily: 'BlinkMacSystemFont'
 				},
 			}
         }
@@ -78,7 +81,7 @@ function getWafChartData(server) {
 			server: server,
 			token: $('#token').val()
 		},
-		type: "GET",
+		type: "POST",
         success: function (result) {   
             var data = [];
             data.push(result.chartData.curr_con);
@@ -89,7 +92,6 @@ function getWafChartData(server) {
     });
 }
 function renderWafChart(data, labels, server) {
-	console.log(server)
     var ctx = 's_'+server
     var myChart = new Chart(ctx, {
         type: 'line',
@@ -105,6 +107,7 @@ function renderWafChart(data, labels, server) {
             ]
         },
         options: {
+			maintainAspectRatio: false,
 			title: {
 				display: true,
 				text: "WAF "+data[1],
@@ -121,7 +124,9 @@ function renderWafChart(data, labels, server) {
 			legend: {
 				display: true,
 				labels: {
-					fontColor: 'rgb(255, 99, 132)'
+					fontColor: 'rgb(255, 99, 132)',
+					defaultFontSize: '10',
+					defaultFontFamily: 'BlinkMacSystemFont'
 				},
 			}
         }
@@ -138,9 +143,9 @@ function loadMetrics() {
 			token: $('#token').val()
 		},
 		beforeSend: function() {
-			$('#table_metrics').prepend('<img class="loading_full_page" src="/inc/images/loading.gif" />')
+			$('#table_metrics').html('<img class="loading_full_page" src="/inc/images/loading.gif" />')
 		},
-		type: "GET",
+		type: "POST",
         success: function (data) {   
            $( "#table_metrics" ).html( data );
         }

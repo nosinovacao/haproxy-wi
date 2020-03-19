@@ -1,6 +1,5 @@
 {% for service in service_status %}
-	{% if service.3 == "On" or service.3 == "Off" or service.3 == "DetectionOnly" or url == "waf.py" %}
-		<tr class="{{ loop.cycle('odd', 'even') }}" id="{{service.0}}-select-line">
+	{% if service.3 == "On" or service.3 == "Off" or service.3 == "DetectionOnly" %}
 			<td class="padding10 first-collumn-wi">
 				{% if service.2|int() >= 1 %}
 					<span class="serverUp server-status" title="running {{service.2 }} processes"></span>
@@ -14,13 +13,13 @@
 			<td>
 			{% if role <= 1 %}
 				<a id="{{ service.1 }}" class="start-waf" title="Start WAF service">
-					<img src=/inc/images/start.png alt="start" class="icon" style="margin-bottom: -4px;">
+					<span class="service-start" onclick="confirmAjaxAction('start', 'waf', '{{service.1}}')"></span>
 				</a>
 				<a id="{{ service.1 }}" class="stop-waf" title="Stop WAF service">
-					<img src=/inc/images/stop.png alt="start" class="icon" width="17px">
+					<span class="service-stop" onclick="confirmAjaxAction('stop', 'waf', '{{service.1}}')"></span>
 				</a>
 				<a id="{{ service.1 }}" class="restart-waf" title="Restart WAF service">
-					<img src=/inc/images/update.png alt="restart" class="icon">
+					<span class="service-reload" onclick="confirmAjaxAction('restart', 'restart', '{{service.1}}')"></span>
 				</a>
 			{% endif %}
 			</td>
@@ -57,7 +56,13 @@
 				{% endif %}
 			</td>
 			<td></td>
-		</tr>
+	{% else %}
+		<td class="padding10 first-collumn-wi">
+			<span class="serverDown server-status"></span> {{ service.0 }}
+		</td>
+		<td colspan="3">
+			{{ service.3 }}
+		</td>
 	{% endif %}
 {% endfor %}
 <script>
@@ -71,4 +76,5 @@
 </script>
 <style>
 .ui-selectmenu-button.ui-button {width: 10em;}
+.fa-play, .fa-stop, .fa-sync-alt { margin-bottom: -1px; }
 </style>

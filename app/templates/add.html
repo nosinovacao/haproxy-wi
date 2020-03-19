@@ -19,12 +19,14 @@ h3 {
 		<li><a href="#ssl">SSL certificates</a></li>
 		<li><a href="#option">Options</a></li>
 		<li><a href="#add-servers">Servers</a></li>
-		<li><a href="#userlist">Userlist</a></li>
+		<li><a href="#userlist">Userlists</a></li>
+		<li><a href="#lists">Lists</a></li>
 		{% include 'include/login.html' %}
 	</ul>
+	<ul id='browse_histroy'></ul>
 	{% include 'include/add_proxy.html' %}
 	<div id="listen">
-		<form name="add-listner" action="/app/add.py">
+		<form name="add-listner" action="/app/add.py" method="post">
 		<table class="add-table">
 			<caption><h3>Add listen</h3></caption>
 				<tr>
@@ -156,7 +158,6 @@ h3 {
 					<div class="tooltip">
 						<span style="padding-right: 10px;">Start typing options: </span>
 						{{ input('options') }}
-						<input type="text" id="options" class="form-control">
 						<span style="padding-left: 10px;">
 							or press down. <a href="http://cbonte.github.io/haproxy-dconv/1.7/configuration.html" target="_blanck" style="color: #23527c" title="HAproxy docs">Read more about options</a>
 						</span>
@@ -173,6 +174,9 @@ h3 {
 			<td class="addName">Servers:</td>
 			<td class="addOption">
 				{% include 'include/add_servers.html' %}
+				<br>
+				<br>
+				{{ checkbox('template-listen', name='template', title='Use server-template instead servers list', value='template', desc='Server-template') }}
 			</td>
 		</tr>
 		<tr class="advance">
@@ -188,10 +192,10 @@ h3 {
 					<input type="checkbox" id="check-servers-listen" name="check-servers" checked value="1">
 					{% set values = dict() %}
 					{% set values = {'1000':'1000','2000':'2000','3000':'3000'} %}
-					{{ select('inter', values=values, first='inter', class='force_close') }}	
+					{{ select('inter-listen', values=values, first='inter', class='force_close') }}	
 					{% set values = dict() %}
 					{% set values = {'1':'1','2':'2','3':'3'} %}
-					{{ select('rise-listen', name='rise-listen', values=values, first='rise', class='force_close') }}
+					{{ select('rise-listen', name='rise', values=values, first='rise', class='force_close') }}
 					{% set values = dict() %}
 					{% set values = {'4':'4','5':'5','6':'6'} %}
 					{{ select('fall-listen', name='fall', values=values, first='fall', class='force_close') }}
@@ -204,7 +208,7 @@ h3 {
 		</tr>
 		<tr>
 			<td class="addButton">
-				<button type="submit" value="" name="" class="btn btn-default">Add Listen</button>
+				<button type="submit" value="submit">Add Listen</button>
 			</td>
 		</tr>
 		</form>
@@ -214,7 +218,7 @@ h3 {
 		<!-- Second tabs -->
 		
 	<div id="frontend">
-		<form name="add-frontend" action="/app/add.py">
+		<form name="add-frontend" action="/app/add.py" method="post">
 		<table>
 			<caption><h3>Add frontend</h3></caption>
 			<tr>
@@ -345,7 +349,7 @@ h3 {
 		</tr>
 		<tr>
 			<td class="addButton">
-				<button type="submit" value="" name="" class="btn btn-default">Add Frontend</button>
+				<button type="submit">Add Frontend</button>
 			</td>
 		</tr>
 		</form>
@@ -355,7 +359,7 @@ h3 {
 				<!-- Third tabs -->
 		
 	<div id="backend">
-		<form name="add-backend" action="/app/add.py">
+		<form name="add-backend" action="/app/add.py" method="post">
 		<table>
 			<caption><h3>Add backend</h3></caption>
 			<tr>
@@ -471,6 +475,9 @@ h3 {
 			<td class="addName">Servers:</td>
 			<td class="addOption">
 				{% include 'include/add_servers.html' %}
+				<br>
+				<br>
+				{{ checkbox('template-backend', name='template', title='Use server-template instead servers list', value='template', desc='Server-template') }}
 			</td>
 		</tr>
 		<tr class="advance">
@@ -489,7 +496,7 @@ h3 {
 					{{ select('inter-backend', values=values, first='inter', class='force_close') }}	
 					{% set values = dict() %}
 					{% set values = {'1':'1','2':'2','3':'3'} %}
-					{{ select('rise-backend', name='rise-listen', values=values, first='rise', class='force_close') }}
+					{{ select('rise-backend', name='rise', values=values, first='rise', class='force_close') }}
 					{% set values = dict() %}
 					{% set values = {'4':'4','5':'5','6':'6'} %}
 					{{ select('fall-backend', name='fall', values=values, first='fall', class='force_close') }}
@@ -671,7 +678,7 @@ h3 {
 		</div>
 	</div>
 	<div id="userlist">
-		<form name="add-userlist" action="/app/add.py">
+		<form name="add-userlist" action="/app/add.py" method="post">
 		<table>
 			<caption><h3>Add Userlist</h3></caption>
 			<tr>
@@ -740,6 +747,45 @@ h3 {
 			</a>
 		</div>
 	</div>	
+	<div id="lists">
+		<table class="overview">
+			<tr class="overviewHead">
+				<td class="padding10 first-collumn">New black list</th>
+				<td>Exists black lists</th>
+				<td class="padding10 first-collumn">New white list</th>
+				<td>Exists white lists</th>
+			</tr>
+			<tr>
+				<td class="padding10 first-collumn" style="width: 25%;">
+					Name: {{ input('new_blacklist_name') }}
+					<button onclick="createList('black')">Create</button>
+				</td>
+				<td style="width: 30%;">
+					{% for list in black_lists %}
+						<a onclick="editList('{{ list }}', 'black')" style="cursor: pointer;" title="Edit list {{ list }}">{{ list }}</a>
+					{% endfor %}
+				</td>
+				<td class="padding10 first-collumn" style="width: 25%;">
+					Name: {{ input('new_whitelist_name') }}
+					<button onclick="createList( 'white')">Create</button>
+				</td>
+				<td style="width: 30%;">
+					{% for list in white_lists %}
+						<a onclick="editList('{{ list }}', 'white')" style="cursor: pointer;" title="Edit list {{ list }}">{{ list }}</a>
+					{% endfor %}
+				</td>
+			</tr>
+			{{ input('group', value=group, type='hidden') }}
+		</table>
+		<div class="add-note addName alert-info" style="width: inherit; margin-right: 15px;">
+			In this section you can create and edit black and white lists. And after use them in the HAProxy configs or in the "Add proxy" pages
+		</div>
+		<div id="ajax"></div>
+		<div id="dialog-confirm-cert-edit" title="View certificate " style="display: none;">
+			<span><b>Note:</b> Each new address must be specified from a new line</span>
+			<textarea id="edit_lists" style="width: 100%" rows=20></textarea>
+		</div>	
+	</div>
 	{% include 'include/del_confirm.html' %}
 	<div id="dialog-confirm-cert" title="View certificate " style="display: none;">
 		<center><pre id="dialog-confirm-body"></pre></center>
@@ -752,6 +798,11 @@ $( function() {
 	$( ".force_close" ).selectmenu({
 	  width: 180
 	});
+	if (window.matchMedia('(max-width: 1280px)').matches || window.matchMedia('(max-width: 1024px)').matches || window.matchMedia('(max-width: 667px)').matches) {
+		$( "select" ).selectmenu({
+			  width: 150
+		});
+	}
 });
 </script>
 {% endblock %}

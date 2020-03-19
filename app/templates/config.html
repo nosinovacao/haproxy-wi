@@ -4,42 +4,36 @@
 <center>
 	<h3>Choose server</h3>
 	<p>
-		<form action="{{ action }}" method="get">
+		<form action="{{ action }}" method="post">
 			<a class="ui-button ui-widget ui-corner-all" title="Return back" id="back" onclick="history.go(-2)">Back</a>
+			<input type="hidden" id="service" value="{{service}}" />
 			<select autofocus required name="serv" id="{{ select_id }}">
 				<option disabled>Choose server</option>
 					{% for select in selects %}
-						{% if keepalived %}
-							{% if select.1 == serv %}
-								<option value="{{ select.1 }}" selected>{{ select.0 }}</option>								
-							{% else %}
-								<option value="{{ select.1 }}">{{ select.0 }}</option>								
-							{% endif %}
-							{% if select.3 == serv %}
-								<option value="{{ select.3 }}" selected>{{ select.2 }}</option>
-							{% else %}
-								<option value="{{ select.3 }}">{{ select.2 }}</option>
-							{% endif %}
+						{% if select.2 == serv %}
+							<option value="{{ select.2 }}" selected>{{ select.1 }}</option>
 						{% else %}
-							{% if select.2 == serv %}
-								<option value="{{ select.2 }}" selected>{{ select.1 }}</option>
-							{% else %}
-								<option value="{{ select.2 }}">{{ select.1 }}</option>
-							{% endif %}
+							<option value="{{ select.2 }}">{{ select.1 }}</option>
 						{% endif %}
 					{% endfor %}
 			</select>
-			{% if not keepalived %}
-				<a class="ui-button ui-widget ui-corner-all" title="Show running config" onclick="showConfig()">Open</a>	
-				<a class="ui-button ui-widget ui-corner-all" title="Compare configs" onclick="showCompareConfigs()">Compare</a>	
+			{% if service != 'keepalived' and service != 'nginx'%}
+				<a class="ui-button ui-widget ui-corner-all" title="Show running config" onclick="showConfig()">Open</a>
 				<a class="ui-button ui-widget ui-corner-all" title="Show map" onclick="showMap()">Map</a>	
-				<a class="ui-button ui-widget ui-corner-all" title="View stat" onclick="openStats()">Stat</a>	
+				<a class="ui-button ui-widget ui-corner-all" title="View stat" onclick="openStats()">Stat</a>
+			{% endif %}
+			{% if role <= 2 and service == 'nginx'%}
+				<button type="submit" value="open" name="open" class="btn btn-default" title="Edit running config">Edit</button>
+			{% endif %}
+			{% if service != 'keepalived' %}					
+				<a class="ui-button ui-widget ui-corner-all" title="Compare configs" onclick="showCompareConfigs()">Compare</a>	
 				{% if role <= 2 %}
 					<a class="ui-button ui-widget ui-corner-all" title="Show versions" onclick="openVersions()">Versions</a>	
 				{% endif %}
 			{% else %}
 				{% if role <= 2 %}
-				<button type="submit" value="open" name="open" class="btn btn-default" title="Edit running config">Edit</button>
+					<button type="submit" value="open" name="open" class="btn btn-default" title="Edit running config">Edit</button>
+					<a class="ui-button ui-widget ui-corner-all" title="Show versions" onclick="openVersions()">Versions</a>
 				{% endif %}
 			{% endif %}
 		</form>
@@ -53,15 +47,19 @@
 		{% if role <= 2 %}
 			<div id="config">
 				<h4>Config from {{ serv }}</h4>
-				<form action="{{ action }}" name="saveconfig" method="get">
+				<form action="{{ action }}" name="saveconfig" method="post">
 					<input type="hidden" value="{{ serv }}" name="serv"> 
 					<input type="hidden" value="{{ cfg }}.old" name="oldconfig"> 
 					<textarea name="config" class="config" rows="35" cols="100">{{ config }}</textarea> 
 					<p>
+					{% if service == 'haproxy' %}
 						<button type="submit" value="test" name="save" class="btn btn-default">Just test</button>
+					{% endif %}
 						<button type="submit" value="save" name="save" class="btn btn-default">Just save</button>
 						<button type="submit" value="" name="" class="btn btn-default">Save and restart</button>
+					{% if service != 'keepalived' %}
 						<button type="submit" value="reload" name="save" class="btn btn-default">Save and reload</button>
+					{% endif %}
 					</p>
 				</form>
 				{% if note %}
@@ -78,14 +76,13 @@
 			<div class="alert alert-success">Config is ok</div>
 			<a href="viewsttats.py?serv={{ serv }}" target="_blank" title="View stats">Go to view stats</a>
 		{% endif %}
-		<script>window.history.pushState("Config", "Config", cur_url[0])</script>
 	{% endif %}
 	</center>
 <script> 
 	if (cur_url[1].split('&')[1] == 'showMap') {
 		showMap();		
 	}
-	if (cur_url[1].split('&')[1] == 'showCompare') {
+	if (cur_url[1].split('&')[1] == 'showCompare' || cur_url[1].split('&')[2] == 'showCompare') {
 		showCompareConfigs();		
 	}
 	if (cur_url[1].split('&')[1] == 'showConfig') {

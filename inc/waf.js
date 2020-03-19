@@ -1,9 +1,43 @@
+var awesome = "/inc/fontawesome.min.js"
+
 $( function() {
 	$( "#ajaxwafstatus input" ).change(function() {
 		var id = $(this).attr('id');
 		metrics_waf(id);
 	});
 } );
+function showOverviewWaf(serv, hostnamea) {
+	$.getScript('/inc/chart.min.js');
+	showWafMetrics();
+	var i;
+	for (i = 0; i < serv.length; i++) { 
+		showOverviewWafCallBack(serv[i], hostnamea[i])
+	}
+	$.getScript('/inc/overview.js');
+	$.getScript('/inc/waf.js');
+}
+function showOverviewWafCallBack(serv, hostnamea) {
+	$.ajax( {
+		url: "options.py",
+		data: {
+			act: "overviewwaf",
+			serv: serv,
+			token: $('#token').val()
+		},
+		beforeSend: function() {
+			$("#"+hostnamea).html('<img class="loading_small" src="/inc/images/loading.gif" />');
+		},
+		type: "POST",
+		success: function( data ) {
+			$("#"+hostnamea).empty();
+			$("#"+hostnamea).html(data)		
+			$( "input[type=submit], button" ).button();
+			$( "input[type=checkbox]" ).checkboxradio();
+			$.getScript('/inc/overview.js');
+			$.getScript(awesome);
+		}				
+	} );
+}
 function metrics_waf(name) {
 	var enable = 0;
 	if ($('#'+name).is(':checked')) {
@@ -16,9 +50,9 @@ function metrics_waf(name) {
 			enable: enable,
 			token: $('#token').val()
 		},
-		type: "GET",
+		type: "POST",
 		success: function( data ) {
-			showOverviewWaf();
+			showOverviewWaf(ip, hostnamea);
 			setTimeout(function() {
 				$( "#"+name ).parent().parent().removeClass( "update" );
 			}, 2500 );
@@ -34,7 +68,7 @@ function installWaf(ip) {
 			installwaf: ip,
 			token: $('#token').val()
 		},
-		type: "GET",
+		type: "POST",
 		success: function( data ) { 
 		data = data.replace(/\s+/g,' ');
 			if (data.indexOf('error') != '-1' || data.indexOf('Failed') != '-1') {
@@ -43,11 +77,15 @@ function installWaf(ip) {
 					$('#error').remove();
 					$('.alert-danger').remove();
 				});
+			} else if (data.indexOf('Info') != '-1' ){
+				$('.alert-danger').remove();
+				$('.alert-warning').remove();
+				$("#ajax").html('<div class="alert alert-info">'+data+'</data>');
 			} else if (data.indexOf('success') != '-1' ){
 				$('.alert-danger').remove();
 				$('.alert-warning').remove();
 				$("#ajax").html('<div class="alert alert-success">'+data+'</data>');
-				showOverviewWaf()
+				showOverviewWaf(ip, hostnamea)
 			}	
 		}
 	} );	
@@ -62,7 +100,7 @@ function changeWafMode(id) {
 			server_hostname: server_hostname,
 			token: $('#token').val()
 		},
-		type: "GET",
+		type: "POST",
 		success: function( data ) {
 			alert('Do not forget restart WAF server: '+server_hostname)
 			$( '#'+server_hostname+'-select-line' ).addClass( "update", 1000 );										

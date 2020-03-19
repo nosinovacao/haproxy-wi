@@ -11,7 +11,7 @@
 		</tr>
 		<tr>
 			<td class="padding10 first-collumn" style="width: 25%;">
-				<form action="{{ action }}" method="get" id="runtimeapiform">
+				<form action="{{ action }}" method="post" id="runtimeapiform">
 					{% include 'include/select.html' %}
 			</td>
 			<td style="width: 30%;">
@@ -42,6 +42,14 @@
 	<script>
 		if($('#servbackend').val()) {
 			window.onload = {{ onclick }}	
+		}
+		if (window.matchMedia('(max-width: 786px)').matches || window.matchMedia('(max-width: 1024px)').matches || window.matchMedia('(max-width: 667px)').matches) {
+			$( "#servaction" ).selectmenu({
+			  width: 150
+			});
+			$( "#serv" ).selectmenu({
+			  width: 150
+			});
 		}
 	</script>
 	<div id="ajaxruntime"></div>

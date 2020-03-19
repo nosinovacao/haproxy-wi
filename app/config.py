@@ -1,21 +1,17 @@
 #!/usr/bin/env python3
-import cgi
 import os
-import http.cookies
 import funct
 import sql
-import cgitb
 from jinja2 import Environment, FileSystemLoader
-cgitb.enable()
-
 env = Environment(loader=FileSystemLoader('templates/'), autoescape=True)
 template = env.get_template('config.html')
 
 print('Content-type: text/html\n')
 funct.check_login()
 
-form = cgi.FieldStorage()
+form = funct.form
 serv = form.getvalue('serv')
+service = form.getvalue('service')
 config_read = ""
 cfg = ""
 stderr = ""
@@ -23,28 +19,52 @@ error = ""
 aftersave = ""
 
 try:
-	cookie = http.cookies.SimpleCookie(os.environ.get("HTTP_COOKIE"))
-	user_id = cookie.get('uuid')
-	user = sql.get_user_name_by_uuid(user_id.value)
-	servers = sql.get_dick_permit()
-	token = sql.get_token(user_id.value)
-	role = sql.get_user_role_by_uuid(user_id.value)
+	user, user_id, role, token, servers = funct.get_users_params()
 except:
 	pass
 
-hap_configs_dir = funct.get_config_var('configs', 'haproxy_save_configs_dir')
+if service == 'keepalived':
+	title = "Working with Keepalived configs"
+	action = "config.py?service=keepalived"
+	configs_dir = funct.get_config_var('configs', 'kp_save_configs_dir')	
+	format = 'conf'
+	servers = sql.get_dick_permit(keepalived=1)
+elif service == 'nginx':
+	title = "Working with Nginx configs"
+	action = "config.py?service=nginx"
+	configs_dir = funct.get_config_var('configs', 'nginx_save_configs_dir')	
+	format = 'conf'
+	servers = sql.get_dick_permit(nginx=1)
+else:
+	title = "Working with HAProxy configs"
+	action = "config.py"
+	configs_dir = funct.get_config_var('configs', 'haproxy_save_configs_dir')
+	format = 'cfg'
+	servers = sql.get_dick_permit()
 
 if serv is not None:
-	cfg = hap_configs_dir + serv + "-" + funct.get_data('config') + ".cfg"
+	cfg = configs_dir + serv + "-" + funct.get_data('config') + "."+format
 
 if serv is not None and form.getvalue('open') is not None :
 	
-	try:
-		funct.logging(serv, "config.py open config")
-	except:
-		pass
-	
-	error = funct.get_config(serv, cfg)
+	if service == 'keepalived':
+		error = funct.get_config(serv, cfg, keepalived=1)
+		try:
+			funct.logging(serv, " Keepalived config has opened for ")
+		except:
+			pass
+	elif service == 'nginx':
+		error = funct.get_config(serv, cfg, nginx=1)
+		try:
+			funct.logging(serv, " Nginx config has opened ")
+		except:
+			pass
+	else:
+		error = funct.get_config(serv, cfg)
+		try:
+			funct.logging(serv, " HAProxy config has opened ")
+		except:
+			pass
 	
 	try:
 		conf = open(cfg, "r")
@@ -62,30 +82,30 @@ if serv is not None and form.getvalue('config') is not None:
 		pass
 		
 	config = form.getvalue('config')
-	funct.logging(serv, 'config: '+ config)
 	oldcfg = form.getvalue('oldconfig')
-	funct.logging(serv, 'oldconfig: ' + oldcfg)
 	save = form.getvalue('save')
 	aftersave = 1
 	try:
 		with open(cfg, "a") as conf:
 			conf.write(config)
-		funct.logging(serv, 'after writing new configuration')
 	except IOError:
 		error = "Can't read import config file"
-	except:
-		funct.logging(serv, 'unexpected error: ' + sys.exc_info()[0])
-		
-	stderr = funct.master_slave_upload_and_restart(serv, cfg, just_save=save)
+	
+	if service == 'keepalived':
+		stderr = funct.upload_and_restart(serv, cfg, just_save=save, keepalived=1)
+	elif service == 'nginx':
+		stderr = funct.master_slave_upload_and_restart(serv, cfg, just_save=save, nginx=1)
+	else:
+		stderr = funct.master_slave_upload_and_restart(serv, cfg, just_save=save)
 		
 	funct.diff_config(oldcfg, cfg)
 		
-	os.system("/bin/rm -f " + hap_configs_dir + "*.old")
+	os.system("/bin/rm -f " + configs_dir + "*.old")
 
 
-template = template.render(h2 = 1, title = "Working with HAProxy configs",
+template = template.render(h2 = 1, title = title,
 							role = role,
-							action = "config.py",
+							action = action,
 							user = user,
 							select_id = "serv",
 							serv = serv,
@@ -97,5 +117,6 @@ template = template.render(h2 = 1, title = "Working with HAProxy configs",
 							error = error,
 							note = 1,
 							versions = funct.versions(),
+							service = service,
 							token = token)
 print(template)

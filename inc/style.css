@@ -29,6 +29,36 @@ h3 {
 	font-size: 1.6em;
 	border-bottom: 1px solid #ddd;
 }
+ul#browse_histroy {
+    padding-left: 10px;
+    margin-bottom: 5px;
+    display: block;
+    margin-top: 1px;
+	list-style: none;
+}
+ul#browse_histroy li {
+	display: inline;
+	padding-right: 5px;
+}
+ul#browse_histroy li+li:before {
+	content: "\003e";
+	color: #000;
+	font-weight: bold;
+	margin-right: 2.5px;	
+}
+#browse_histroy a {
+	color: #767676;
+	font-size: 9.1px;
+	font-weight: bold;
+}
+ul#browse_histroy li:first-child a {
+	font-size: 8.4px;
+	color: #979393;
+}
+ul#browse_histroy li:last-child a {
+	font-size: 9.8px;
+	color: #7e7b7b;
+}
 form {
 	margin: 0;
 }
@@ -57,6 +87,7 @@ pre {
 	z-index: 1000;
 	display: block;
 	background-color: #222a31;
+	font-size: 12px;
 }
 .logoText {
 	color: #EBF1F1;
@@ -119,7 +150,6 @@ pre {
 	text-align: right;
 	margin-right: 20px;
 }
-
 .footer-link, .footer-copyright {
 	padding: 20px;
 	color: #5d9ceb;
@@ -222,6 +252,7 @@ pre {
 }
 .config {
 	height: 60%;
+	width: 60% !important;
 }
 .diffHead {
 	background-color: #F5F5F5;
@@ -259,10 +290,10 @@ pre {
 	margin-left: 30px;
 	position: fixed;
 	margin-left: 65px;
-	margin-top: 25px;
+	margin-top: 15px;
 }
 .line {
-	background-color: #f5faf4;
+	background-color: #f3f8fb;
 	border: 1px solid #ddd;
 }
 .line, .line3 {
@@ -346,7 +377,6 @@ pre {
 .overview-wi .overviewHead {
 	border-bottom: 1px solid #A4C7F5;
 }
-
 .overview  tr{
 	border-bottom: 1px solid #ddd;
 	border-radius: 5px;
@@ -529,7 +559,6 @@ ul{
 	50% {text-shadow: 0 0 30px black;}
 	to {box-shadow: 0 -5px 5px -5px #5D9CEB inset}
 }
-
 .form-control:hover {
 	animation: shadow-red  0.3s forwards;
 }
@@ -564,15 +593,6 @@ ul{
 	border: none !important;
 	border-color: #5D9CEB !important;
 }
-/* .ui-tooltip, .arrow:after { */
-    /* background: #33414E !important; */
-    /* border: 1px solid #33414E !important; */
-	/* border-radius: 5px !important; */
-	/* color: #fff !important; */
-	/* font-size: 10px !important; */
-	/* padding: 2px !important; */
-	/* margin-bottom: -20px !important; */
-  /* } */
 .ui-tabs-nav {
 	border-radius: 0 !important;
 	padding-left: 25px !important; 
@@ -611,18 +631,16 @@ a {
 a:active, a:hover {
   outline: 0;
 }
-a,
-a:visited {
+a, a:visited {
     text-decoration: underline;
   }
 a {
 	color: #9d9d9d;
 	text-decoration: none;
 }
-a:hover,
-a:focus {
+a:hover, a:focus {
   color: #23527c;
-  text-decoration: underline;
+  text-decoration:  derline;
 }
 a:focus {
   outline: 5px auto -webkit-focus-ring-color;
@@ -646,7 +664,6 @@ td,th {
   text-align: left;
   min-width: 25px;
 }
-
 .row {
   margin-right: -15px;
   margin-left: -15px;
@@ -725,19 +742,30 @@ label {
 .even {
 	background-color: #f3f8fb;
 }
-.div-server {
+#up-pannel {
+	margin-top: 15px;
+}
+.div-server, .div-server-hapwi {
 	background-color: #fbfbfb;
 	border: 1px solid #A4C7F5;
-	width: 365px;
+	height: 165px;
+	width: 375px;
 	padding: 20px;
+	padding-top: 10px;
 	padding-left: 15px;
 	padding-right: 15px;
 	margin: 20px;
-	margin-right: 10px;
-	margin-bottom: 0;
-	margin-top: 13px;
+	margin-right: 5px;
+	margin-bottom: 20px	;
+	margin-top: 0px;
 	display: block;
 	float: left;
+}
+.div-server {
+	height: 95px;
+}
+.div-backends {
+	width: 89.3%;
 }
 .server-name {
 	padding-bottom: 3px;
@@ -758,10 +786,9 @@ label {
 	margin-top: 6px;
 }
 .server-desc {
-	padding-bottom: 10px;
     color: #999;
-    padding-top: 10px;
-	min-height: 60px;
+    padding-top: 5px;
+	height: 80px;
 }
 .server-act-links {
 	margin-left: -2px;
@@ -779,30 +806,33 @@ label {
 	margin: 25px;
 	margin-left: 440px;
 	margin-bottom: 0;
-	width: 60em;
+	width: 750px;
 	display: none;
 	margin-top: px;
 	margin-bottom: 0px;
-	margin-top: 14px;
-	height: 192px;
+	margin-top: 0px;
+	height: 185px;
+	padding-bottom: 0px;
+	padding-top: 10px;
+	padding-left: 15px;
+	padding-right: 15px;
 }
 .haproxy-info {
 	display: inline-block;
 	width: 160px;
 	padding-left: 30px;
-	padding-top: 35px;
+	padding-top: 15px;
 	font-size: 12px;
 	float: left;
 }
 .top-info {
 	display: inline-block;
 	width: 350px;
-	margin-top: 30px;
+	margin-top: 10px;
 	font-size: 10px;
 }
 .update-icon {
 	float: right;
-	margin-top: 35px;
 	margin-right: 15px;
 }
 .span-link {
@@ -821,7 +851,7 @@ label {
 }
 .chart-container {
 	position: relative;
-	height: 400px;
+	height: 300px;
 	width: 49%;
 	float: left;
 	margin-top: 20px;
@@ -831,10 +861,6 @@ label {
   #logo_span {
 	margin-left: 17%;
 	}	
-	.chart-container {
-		height: 290px;
-		width: 32.4%;
-	}
 }
 @media (max-width: 1900px) {
 	#logo_span {
@@ -844,13 +870,40 @@ label {
 		margin-right: -150px;
 	}
 }
+@media (max-width: 1450px) {
+	.ajax-server, .div-backends {
+		clear: both !important;
+		margin-left: 20px !important;
+		margin-bottom: 20px !important;
+		width: 88% !important;
+	}
+	.div-server {
+		margin-bottom: 30px !important;
+		width: 43%;
+		height: 100px;
+	}
+}
 @media (max-width: 1280px) {
 	.div-server {
 		margin-bottom: 30px !important;
+		width: 90%;
+		height: 70px;
 	}
 	.ajax-server {
 		clear: both !important;
 		margin-left: 20px !important;
+	}
+	.div-backends {
+		width: 84.6% !important
+	}
+	#ssl_name {
+		width: 100px;
+	}
+	.form-control {
+		width: 120px;
+	}
+	#create {
+		margin-top: 20px;
 	}
 }
 @media (max-width: 1080px) {
@@ -870,7 +923,17 @@ label {
 		margin-right: -50px;
 	}
 	.ajax-server {
-		width: 750px !important;
+		width: 88% !important;
+	}
+	.haproxy-info {
+		width: 120px;
+		padding-left: 10px;
+	}
+	.div-backends {
+		width: 84.6% !important
+	}
+	#ssl_cert {
+		width: 60%;
 	}
 }
 @media (max-width: 1024px) {
@@ -882,13 +945,23 @@ label {
 		height: 410px;
 		width: 95%;
 	}
-	.overview-wi {
-		width: 95%;
-		max-width: 95%;
-	}
 	.wrong-login {
 		margin-right: -150px;
 	}
+	.haproxy-info {
+		width: 120px;
+		padding-left: 10px;
+	}
+	.div-backends {
+		width: 84.2% !important
+	}
+	#rows {
+		width: 50px;
+	}
+	#grep {
+		width: 100px;
+	}
+	
 }
 @media (max-width: 768px) {
   #logo_span {
@@ -900,10 +973,6 @@ label {
 		height: 410px;
 		width: 95%;
 	}
-	.overview-wi {
-		width: 95%;
-		max-width: 95%;
-	}
 	.wrong-login {
 		margin-right: -260px;
 	}
@@ -912,6 +981,22 @@ label {
 	}
 	.overview h3 {
 		width: 46.4% !important;
+	}
+	.div-server {
+		height: 90px;
+	}
+	.haproxy-info {
+		width: 120px;
+		padding-left: 10px;
+	}
+	.div-backends {
+		width: 82.5% !important
+	}
+	#rows {
+		width: 50px;
+	}
+	#grep {
+		width: 100px;
 	}
 }
 @media (max-width: 667px) {
@@ -924,12 +1009,21 @@ label {
 		height: 410px;
 		width: 95%;
 	}
-	.overview-wi {
-		width: 95%;
-		max-width: 95%;
-	}
 	.wrong-login {
 		margin-right: -210px;
+	}
+	.haproxy-info {
+		width: 120px;
+		padding-left: 10px;
+	}
+	.div-backends {
+		width: 84.6% !important
+	}
+	#rows {
+		width: 50px;
+	}
+	#grep {
+		width: 100px;
 	}
 }
 .loading, .loading_full_page, .loading_hapwi_overview {
@@ -942,6 +1036,15 @@ label {
 }
 .loading_hapwi_overview{
 	margin-left: 40%;
+}
+.loading_small {
+	width: 39px;
+	height: 39px;
+	padding-left: 103%;
+}
+.loading_small_haproxyservers {
+	width: 15px;
+	height: 15px;
 }
 .tooltip {
 	font-size: 12px; 

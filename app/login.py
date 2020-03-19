@@ -11,9 +11,9 @@ import create_db
 import datetime
 import uuid
 from jinja2 import Environment, FileSystemLoader
-env = Environment(loader=FileSystemLoader('templates/'))
+env = Environment(loader=FileSystemLoader('templates/'), autoescape=True)
 template = env.get_template('login.html')
-form = cgi.FieldStorage()
+form = funct.form
 
 cookie = http.cookies.SimpleCookie(os.environ.get("HTTP_COOKIE"))
 user_id = cookie.get('uuid')
@@ -34,13 +34,13 @@ def send_cookie(login):
 
 	c = http.cookies.SimpleCookie(os.environ.get("HTTP_COOKIE"))
 	c["uuid"] = user_uuid
-	c["uuid"]["path"] = "/app/"
+	c["uuid"]["path"] = "/"
 	c["uuid"]["expires"] = expires.strftime("%a, %d %b %Y %H:%M:%S GMT")
 	print(c)
 	sql.write_user_uuid(login, user_uuid)
 	sql.write_user_token(login, user_token)
 	try:
-		funct.logging('locahost', sql.get_user_name_by_uuid(user_uuid)+' log in', haproxywi=1, login=1)
+		funct.logging('locahost', ' '+sql.get_user_name_by_uuid(user_uuid)+' log in', haproxywi=1)
 	except:
 		pass
 	print("Content-type: text/html\n")			
@@ -52,7 +52,7 @@ def ban():
 	c = http.cookies.SimpleCookie(os.environ.get("HTTP_COOKIE"))
 	expires = datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
 	c["ban"] = 1
-	c["ban"]["path"] = "/app/"
+	c["ban"]["path"] = "/"
 	c["ban"]["expires"] = expires.strftime("%a, %d %b %Y %H:%M:%S GMT")
 	try:
 		funct.logging('locahost', login+' failed log in', haproxywi=1, login=1)
@@ -68,13 +68,26 @@ def check_in_ldap(user, password):
 	
 	server = sql.get_setting('ldap_server')
 	port = sql.get_setting('ldap_port')
+	ldap_class_search = sql.get_setting('ldap_class_search')
+	root_user = sql.get_setting('ldap_user')
+	root_password = sql.get_setting('ldap_password')
+	ldap_base = sql.get_setting('ldap_base')
+	domain = sql.get_setting('ldap_domain')
+	ldap_search_field = sql.get_setting('ldap_search_field')
+	ldap_user_attribute = sql.get_setting('ldap_user_attribute')
 	
-	l = ldap.initialize("ldap://"+server+':'+port)
+	l = ldap.initialize(server+':'+port)
 	try:
 		l.protocol_version = ldap.VERSION3
 		l.set_option(ldap.OPT_REFERRALS, 0)
 
-		bind = l.simple_bind_s(user, password)
+		bind = l.simple_bind_s(root_user, root_password)
+
+		criteria = "(&(objectClass="+ldap_class_search+")("+ldap_user_attribute+"="+user+"))"
+		attributes = [ldap_search_field]
+		result = l.search_s(ldap_base, ldap.SCOPE_SUBTREE, criteria, attributes)
+
+		bind = l.simple_bind_s(result[0][0], password)
 	except ldap.INVALID_CREDENTIALS:
 		print("Content-type: text/html\n")	
 		print('<center><div class="alert alert-danger">Invalid credentials</div><br /><br />')
@@ -123,7 +136,7 @@ if form.getvalue('logout'):
 		sql.delete_uuid(user_id.value)
 	except:
 		pass
-	print("Set-cookie: uuid=; expires=Wed May 18 03:33:20 2003; path=/app/; httponly")
+	print("Set-cookie: uuid=; expires=Wed, May 18 03:33:20 2003; path=/; httponly")
 	print("Content-type: text/html\n")
 	print('<meta http-equiv="refresh" content="0; url=/app/login.py">')
 	sys.exit()
@@ -134,7 +147,7 @@ if login is not None and password is not None:
 	for users in USERS:	
 		if users[7] == 0:
 			print("Content-type: text/html\n")	
-			print('<center><div class="alert alert-danger">Your login is disabled</div><br /><br />')
+			print('Your login is disabled')
 			sys.exit()
 		if users[6] == 1:
 			if login in users[1]:

@@ -7,16 +7,64 @@ $( function() {
    $('.menu li ul li').each(function () {
        var link = $(this).find('a').attr('href');
 	   var link2 = link.split('/')[2]
-       if (cur_url[0] == link2) {
-           $(this).parent().css('display', 'contents');
-           $(this).parent().css('font-size', '13px');
-           $(this).parent().css('top', '0');
-           $(this).parent().css('left', '0');
-           $(this).parent().children().css('margin-left', '-20px');
-		   $(this).parent().find('a').css('padding-left', '20px');
-		   $(this).find('a').css('padding-left', '30px');
-		   $(this).find('a').css('border-left', '4px solid #5D9CEB');
-       }
+	   if (cur_url[1] == null) {
+		cur_url[1] = 'haproxy';
+	   }
+       if (cur_url[0] == link2 && cur_url[1].split('&')[0] != 'service=keepalived' && cur_url[1].split('&')[0] != 'service=nginx') {
+			$(this).parent().css('display', 'contents');
+			$(this).parent().css('font-size', '13px');
+			$(this).parent().css('top', '0');
+			$(this).parent().css('left', '0');
+			$(this).parent().children().css('margin-left', '-20px');
+			$(this).parent().find('a').css('padding-left', '20px');
+			$(this).find('a').css('padding-left', '30px');
+			$(this).find('a').css('border-left', '4px solid #5D9CEB');
+		} else if(cur_url[0] == 'versions.py' && cur_url[1].split('&')[0] == 'service=keepalived' && link2 == 'versions.py?service=keepalived'){ 
+			$(this).parent().css('display', 'contents');
+			$(this).parent().css('font-size', '13px');
+			$(this).parent().css('top', '0');
+			$(this).parent().css('left', '0');
+			$(this).parent().children().css('margin-left', '-20px');
+			$(this).parent().find('a').css('padding-left', '20px');
+			$(this).find('a').css('padding-left', '30px');
+			$(this).find('a').css('border-left', '4px solid #5D9CEB');
+		} else if(cur_url[0] == 'config.py' && cur_url[1].split('&')[0] == 'service=keepalived' && link2 == 'config.py?service=keepalived'){
+			$(this).parent().css('display', 'contents');
+			$(this).parent().css('font-size', '13px');
+			$(this).parent().css('top', '0');
+			$(this).parent().css('left', '0');
+			$(this).parent().children().css('margin-left', '-20px');
+			$(this).parent().find('a').css('padding-left', '20px');
+			$(this).find('a').css('padding-left', '30px');
+			$(this).find('a').css('border-left', '4px solid #5D9CEB');
+		} else if(cur_url[0] == 'versions.py' && cur_url[1].split('&')[0] == 'service=nginx' && link2 == 'versions.py?service=nginx'){ 
+			$(this).parent().css('display', 'contents');
+			$(this).parent().css('font-size', '13px');
+			$(this).parent().css('top', '0');
+			$(this).parent().css('left', '0');
+			$(this).parent().children().css('margin-left', '-20px');
+			$(this).parent().find('a').css('padding-left', '20px');
+			$(this).find('a').css('padding-left', '30px');
+			$(this).find('a').css('border-left', '4px solid #5D9CEB');
+		} else if(cur_url[0] == 'config.py' && cur_url[1].split('&')[0] == 'service=nginx' && link2 == 'config.py?service=nginx'){
+			$(this).parent().css('display', 'contents');
+			$(this).parent().css('font-size', '13px');
+			$(this).parent().css('top', '0');
+			$(this).parent().css('left', '0');
+			$(this).parent().children().css('margin-left', '-20px');
+			$(this).parent().find('a').css('padding-left', '20px');
+			$(this).find('a').css('padding-left', '30px');
+			$(this).find('a').css('border-left', '4px solid #5D9CEB');
+		} else if(cur_url[0] == 'hapservers.py' && cur_url[1].split('&')[0] == 'service=nginx' && link2 == 'hapservers.py?service=nginx'){
+			$(this).parent().css('display', 'contents');
+			$(this).parent().css('font-size', '13px');
+			$(this).parent().css('top', '0');
+			$(this).parent().css('left', '0');
+			$(this).parent().children().css('margin-left', '-20px');
+			$(this).parent().find('a').css('padding-left', '20px');
+			$(this).find('a').css('padding-left', '30px');
+			$(this).find('a').css('border-left', '4px solid #5D9CEB');
+		} 
    });
 });
 
@@ -58,7 +106,7 @@ if(Cookies.get('restart')) {
 			serv: ip,
 			token: $('#token').val()
 		},
-		type: "GET",
+		type: "POST",
 		success: function( data ) {
 			if(data.indexOf('ok') != '-1') {
 				$("#apply").css('display', 'block');
@@ -102,18 +150,18 @@ function autoRefreshStyle(autoRefresh) {
 	$('.auto-refresh-resume').css('margin-left', "-25px");		
 	$('.auto-refresh img').remove();
 }
-
 function setRefreshInterval(interval) {
 	if (interval == "0") {
 		Cookies.remove('auto-refresh');
 		pauseAutoRefresh();
-		$('.auto-refresh').prepend('<img src=/inc/images/update.png alt="restart" class="icon">');
+		$('.auto-refresh').prepend('<span class="service-reload"></span>');
 		$('.auto-refresh').css('margin-top', '-3px');
 		$('#1').text('Auto-refresh');
 		$('#0').text('Auto-refresh');
 		$('.auto-refresh-pause').css('display', 'none');
 		$('.auto-refresh-resume').css('display', 'none');
 		hideAutoRefreshDiv();
+		$.getScript("/inc/fontawesome.min.js")
 	} else {
 		clearInterval(intervalId);
 		Cookies.set('auto-refresh', interval, { expires: 365 });
@@ -123,7 +171,6 @@ function setRefreshInterval(interval) {
 		autoRefreshStyle(interval);
 	}
 }
-
 function startSetInterval(interval) {	
 	if(Cookies.get('auto-refresh-pause') == "0") {
 		if (cur_url[0] == "logs.py") {
@@ -136,8 +183,8 @@ function startSetInterval(interval) {
 			if(interval < 60000) {
 				interval = 60000;
 			}
-			intervalId = setInterval('showOverview()', interval);
-			showOverview(); 
+			intervalId = setInterval('showOverview(ip, hostnamea)', interval);
+			showOverview(ip, hostnamea); 
 		} else if (cur_url[0] == "viewlogs.py") {
 			intervalId = setInterval('viewLogs()', interval);
 			viewLogs();
@@ -151,8 +198,8 @@ function startSetInterval(interval) {
 			if(interval < 60000) {
 				interval = 60000;
 			}
-			intervalId = setInterval('showOverviewWaf()', interval);
-			showOverviewWaf();
+			intervalId = setInterval('showOverviewWaf(ip, hostnamea)', interval);
+			showOverviewWaf(ip, hostnamea);
 			showWafMetrics();
 		} else if (cur_url[0] == "hapservers.py") {
 			if(interval < 60000) {
@@ -194,117 +241,19 @@ $( document ).ajaxComplete(function( event, request, settings ) {
 	$('#cover').fadeOut('fast');
 	NProgress.done();
 });
-
-function showOverview() {
-	showOverviewHapWI()
-	$.ajax( {
-		url: "options.py",
-		data: {
-			act: "overview",
-			token: $('#token').val()
-		},
-		beforeSend: function() {
-			$('#ajaxstatus').html('<img class="loading" src="/inc/images/loading.gif" />')
-		},
-		type: "GET",
-		success: function( data ) {
-			$("#ajaxstatus").empty();
-			$("#ajaxstatus").html(data);
-			$.getScript('/inc/overview.js');
-		}					
-	} );
-}
-function showOverviewServer(name,ip,id) {
-	$.ajax( {
-		url: "options.py",
-		data: {
-			act: "overviewServers",
-			name: name,
-			serv: ip,
-			id: id,
-			page: 'hapservers.py',
-			token: $('#token').val()
-		},
-		type: "GET",
-		success: function( data ) {
-			$("#ajax-server-"+id).empty();
-			$("#ajax-server-"+id).css('display', 'block');
-			$("#ajax-server-"+id).css('background-color', '#fbfbfb');
-			$("#ajax-server-"+id).css('border', '1px solid #A4C7F5');
-			$(".ajax-server").css('display', 'block');
-			$(".div-server").css('clear', 'both');
-			$(".div-pannel").css('clear', 'both');
-			$(".div-pannel").css('display', 'block');
-			$(".div-pannel").css('padding-top', '10px');
-			$(".div-pannel").css('height', '70px');
-			$("#div-pannel-"+id).insertBefore('#up-pannel')
-			$("#ajax-server-"+id).html(data);
-		}					
-	} );
-}
-function showOverviewWaf() {
-	if (cur_url[0] == "waf.py") {
-		$.getScript('/inc/chart.min.js');
-		showWafMetrics()
-	}
-	$.ajax( {
-		url: "options.py",
-		data: {
-			act: "overviewwaf",
-			page: cur_url[0],
-			token: $('#token').val()
-		},
-		beforeSend: function() {
-			if (cur_url[0] == "waf.py") {
-				var load_class = 'loading_full_page'
-			} else {
-				var load_class = 'loading'
-			}
-			$('#ajaxwafstatus').html('<img class="'+load_class+'" src="/inc/images/loading.gif" />')
-		},
-		type: "GET",
-		success: function( data ) {
-			$("#ajaxwafstatus").empty();
-			$("#ajaxwafstatus").html(data);
-			$.getScript('/inc/overview.js');			
-			if (cur_url[0] == "waf.py") {
-				$.getScript('/inc/waf.js');
-				$( "input[type=submit], button" ).button();
-				$( "input[type=checkbox]" ).checkboxradio();
-			} else {
-				$('.first-collumn-wi').css('padding', '10px');
-			}
-		}					
-	} );
-}
-function showOverviewHapWI() {
-	$.ajax( {
-		url: "options.py",
-		data: {
-			act: "overviewHapwi",
-			token: $('#token').val()
-		},
-		beforeSend: function() {
-			$('#ajaxHapwi').html('<img class="loading_hapwi_overview" src="/inc/images/loading.gif" />')
-		},
-		type: "GET",
-		success: function( data ) {
-			$("#ajaxHapwi").html(data);
-		}					
-	} );
-}
 function showStats() {
 	$.ajax( {
 		url: "options.py",
 		data: {
 			act: "stats",
 			serv: $("#serv").val(),
+			service: $("#service").val(),
 			token: $('#token').val()
 		},
-		type: "GET",
+		type: "POST",
 		success: function( data ) {
 			$("#ajax").html(data);			
-			window.history.pushState("Stats", "Stats", cur_url[0]+"?serv="+$("#serv").val());
+			window.history.pushState("Stats", "Stats", cur_url[0]+"?service="+$("#service").val()+"&serv="+$("#serv").val());
 			wait();
 		}					
 	} );
@@ -317,7 +266,13 @@ function openStats() {
 }
 function openVersions() {
 	var serv = $("#serv").val();
-	var url = "versions.py?serv="+serv+"&open=open"
+	if (cur_url[1] == "service=keepalived") {
+		var url = "versions.py?service=keepalived&serv="+serv+"&open=open"
+	} else if (cur_url[1] == "service=nginx") {
+		var url = "versions.py?service=nginx&serv="+serv+"&open=open"
+	} else {	
+		var url = "versions.py?serv="+serv+"&open=open"
+	}
 	var win = window.open(url,"_self");
 	win.focus();
 }
@@ -332,6 +287,7 @@ function showLog() {
 	var minut = $('#time_range_out_minut').val()
 	var hour1 = $('#time_range_out_hour1').val()
 	var minut1 = $('#time_range_out_minut1').val()
+	var service = $('#service').val()
 	$.ajax( {
 		url: "options.py",
 		data: {
@@ -343,12 +299,13 @@ function showLog() {
 			minut: minut,
 			hour1: hour1,
 			minut1: minut1,
+			service: service,
 			token: $('#token').val()
 		},
-		type: "GET",
+		type: "POST",
 		success: function( data ) {
 			$("#ajax").html(data);
-			window.history.pushState("Logs", "Logs", cur_url[0]+"?serv="+$("#serv").val()+
+			window.history.pushState("Logs", "Logs", cur_url[0]+"?service="+service+"&serv="+$("#serv").val()+
 																	'&rows='+rows+
 																	'&grep='+grep+
 																	'&hour='+hour+
@@ -372,7 +329,7 @@ function showMap() {
 			act: "showMap",
 			token: $('#token').val()
 		},
-		type: "GET",
+		type: "POST",
 		success: function( data ) {
 			$("#ajax").html(data);
 			window.history.pushState("Show map", "Show map", cur_url[0]+'?serv='+$("#serv").val()+'&showMap');
@@ -394,7 +351,7 @@ function showRuntime() {
 			save: saveCheck,
 			token: $('#token').val()
 		},
-		type: "GET",
+		type: "POST",
 		success: function( data ) {
 			$("#ajaxruntime").html(data);
 		}					
@@ -407,9 +364,10 @@ function showCompare() {
 			serv: $("#serv").val(),
 			left: $('#left').val(),
 			right: $("#right").val(),
+			service: $("#service").val(),
 			token: $('#token').val()
 		},
-		type: "GET",
+		type: "POST",
 		success: function( data ) {
 			$("#ajax").html(data);
 		}					
@@ -425,14 +383,15 @@ function showCompareConfigs() {
 			serv: $("#serv").val(),
 			act: "showCompareConfigs",
 			open: "open",
+			service: $("#service").val(),
 			token: $('#token').val()
 		},
-		type: "GET",
+		type: "POST",
 		success: function( data ) {
 			$("#ajax-compare").html(data);
 			$( "input[type=submit], button" ).button();
 			$( "select" ).selectmenu();
-			window.history.pushState("Show compare config", "Show compare config", cur_url[0]+'?serv='+$("#serv").val()+'&showCompare');
+			window.history.pushState("Show compare config", "Show compare config", cur_url[0]+'?service='+$("#service").val()+'&serv='+$("#serv").val()+'&showCompare');
 		}					
 	} );
 }
@@ -448,7 +407,7 @@ function showConfig() {
 			act: "configShow",
 			token: $('#token').val()
 		},
-		type: "GET",
+		type: "POST",
 		success: function( data ) {
 			$("#ajax").html(data);
 			$.getScript('/inc/configshow.js');
@@ -457,30 +416,35 @@ function showConfig() {
 	} );
 }
 function showUploadConfig() {
-	var view = $('#view').val();
-	if(view != "1") {
-		view = ""
-	}
+	var service = $('#service').val();
+	var configver = $('#configver').val();
+	var serv = $("#serv").val()
 	$.ajax( {
 		url: "options.py",
 		data: {
-			serv: $("#serv").val(),
+			serv: serv,
 			act: "configShow",
-			configver: $('#configver').val(),
+			configver: configver,
+			service: service,
 			token: $('#token').val(),
-			view: view 
 		},
-		type: "GET",
+		type: "POST",
 		success: function( data ) {
 			$("#ajax").html(data);
-			if(view == "1") {
-				window.history.pushState("Show config", "Show config", cur_url[0]+"?serv="+$("#serv").val()+"&open=open&configver="+$('#configver').val()+"&view="+$('#view').val());
-			} else {
-				window.history.pushState("Show config", "Show config", cur_url[0]+"?serv="+$("#serv").val()+"&open=open&configver="+$('#configver').val());
-			}
+			window.history.pushState("Show config", "Show config", cur_url[0]+"?service="+service+"&serv="+serv+"&open=open&configver="+configver);
 			$.getScript('/inc/configshow.js');
 		}					
 	} );
+}
+function findGetParameter(parameterName) {
+    var result = null,
+        tmp = [];
+    var items = location.search.substr(1).split("&");
+    for (var index = 0; index < items.length; index++) {
+        tmp = items[index].split("=");
+        if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
+    }
+    return result;
 }
 function viewLogs() {
 	if($('#viewlogs').val() == 'haproxy-wi.error.log' || $('#viewlogs').val() == 'haproxy-wi.access.log') {
@@ -492,10 +456,15 @@ function viewLogs() {
 		var minut = $('#time_range_out_minut').val()
 		var hour1 = $('#time_range_out_hour1').val()
 		var minut1 = $('#time_range_out_minut1').val()
+		var viewlogs = $('#viewlogs').val()
+		console.log(findGetParameter('viewlogs'))
+		if (viewlogs == null){
+			viewlogs = findGetParameter('viewlogs')
+		}	
 		$.ajax( {
 			url: "options.py",
 			data: {
-				viewlogs: $('#viewlogs').val(),
+				viewlogs: viewlogs,
 				rows: rows,
 				grep: grep,
 				hour: hour,
@@ -504,10 +473,10 @@ function viewLogs() {
 				minut1: minut1,
 				token: $('#token').val(),				
 			},
-			type: "GET",
+			type: "POST",
 			success: function( data ) {
 				$("#ajax").html(data);
-				window.history.pushState("View logs", "View logs", cur_url[0]+"?viewlogs="+$("#viewlogs").val()+
+				window.history.pushState("View logs", "View logs", cur_url[0]+"?viewlogs="+viewlogs+
 																	'&rows='+rows+
 																	'&grep='+grep+
 																	'&hour='+hour+
@@ -519,6 +488,9 @@ function viewLogs() {
 	}
 }
 $( function() {
+	$('#errorMess').click(function(){
+		$('#error').remove();
+	});
 	$( "#serv" ).on('selectmenuchange',function()  {
 		$("#show").css("pointer-events", "inherit");
 		$("#show").css("cursor", "pointer");
@@ -564,19 +536,25 @@ $( function() {
 		$(".show_menu").hide();
 		$("#hide_menu").show();
 		Cookies.set('hide_menu', 'show', { expires: 365 });
-	});
-	
+	});	
 	var hideMenu = Cookies.get('hide_menu');
 	if (hideMenu == "show") {
 		$(".top-menu").show( "drop", "fast" );
 		$(".container").css("max-width", "100%");
 		$(".container").css("margin-left", "207px");
+		$(".footer").css("margin-left", "207px");
+		$(".footer").css("max-width", "100%");
+		$("#hide_menu").show();
+		$(".show_menu").hide();
 	}
 	if (hideMenu == "hide") {
 		$(".top-menu").hide();
 		$(".container").css("max-width", "97%");
 		$(".container").css("margin-left", "1%");
+		$(".footer").css("margin-left", "1%");
+		$(".footer").css("max-width", "97%");
 		$(".show_menu").show();
+		$("#hide_menu").hide();
 	}	
 	
 	var now = new Date(Date.now());
@@ -677,7 +655,6 @@ $( function() {
 		return false;
 	}); 
 	$('#auth').submit(function() {
-
 		let searchParams = new URLSearchParams(window.location.search)
 		if(searchParams.has('ref')) {
 			var ref = searchParams.get('ref');
@@ -690,10 +667,13 @@ $( function() {
 				login: $('#login').val(),
 				pass: $('#pass').val()
 			},
-			type: "GET",
+			type: "POST",
 			success: function( data ) {
 				if (data.indexOf('ok') != '-1') {
 					window.location.replace(ref);
+				} else if (data.indexOf('disabled') != '-1') {
+					$('.alert').show();
+					$('.alert').html(data);
 				} else if (data.indexOf('ban') != '-1') {
 					ban();				
 				} 
@@ -815,8 +795,64 @@ $( function() {
 				});
 				$( "#tabs" ).tabs( "option", "active", 4 );
 			} );
+			$( ".backup" ).on( "click", function() {
+				$('.menu li ul li').each(function () {
+					$(this).find('a').css('padding-left', '20px')
+					$(this).find('a').css('border-left', '0px solid #5D9CEB');
+					$(this).children(".backup").css('padding-left', '30px');
+					$(this).children(".backup").css('border-left', '4px solid #5D9CEB');
+				});
+				$( "#tabs" ).tabs( "option", "active", 5 );
+			} );
 		}
 	}
+	$( "#haproxyaddserv" ).on('selectmenuchange',function() {
+		$.ajax( {
+			url: "options.py",
+			data: {
+				get_hap_v: 1,
+				serv: $('#haproxyaddserv option:selected').val(),
+				token: $('#token').val()
+			},
+			type: "POST",
+			success: function( data ) {	
+				data = data.replace(/^\s+|\s+$/g,'');
+				if(data != '') {				
+					data = data+'-1';
+					$('#cur_hap_ver').text(data);
+					$('#install').text('Update');
+					$('#install').attr('title', 'Update HAProxy');
+				} else {
+					$('#cur_hap_ver').text('HAProxy has not installed');
+					$('#install').text('Install');
+					$('#install').attr('title', 'Install HAProxy');
+				}
+			}
+		} );
+	});
+	$( "#nginxaddserv" ).on('selectmenuchange',function() {
+		$.ajax( {
+			url: "options.py",
+			data: {
+				get_nginx_v: 1,
+				serv: $('#nginxaddserv option:selected').val(),
+				token: $('#token').val()
+			},
+			type: "POST",
+			success: function( data ) {	
+				data = data.replace(/^\s+|\s+$/g,'');
+				if(data.indexOf('bash') != '-1') {			
+					$('#cur_nginx_ver').text('Nginx has not installed');
+					$('#nginx_install').text('Install');
+					$('#nginx_install').attr('title', 'Install Nginx');				
+				} else {
+					$('#cur_nginx_ver').text(data);
+					$('#nginx_install').text('Update');
+					$('#nginx_install').attr('title', 'Update Nginx');
+				}
+			}
+		} );
+	});
 });
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
@@ -841,44 +877,6 @@ async function ban() {
 	$( "input[type=submit], button" ).button('enable');
 	$('#ban_10').hide();
 } 
-function change_select_acceleration(id) {
-	$.ajax( {
-		url: "options.py",
-		data: {
-			get_hap_v: 1,
-			serv: $('#serv'+id+' option:selected').val(),
-			token: $('#token').val()
-		},
-		type: "GET",
-		success: function( data ) {	
-			console.log(data)
-			if(parseFloat(data) < parseFloat('1.8')) {	
-				$("#cache"+id).checkboxradio( "disable" );
-			} else {
-				$("#cache"+id).checkboxradio( "enable" );
-			}
-		}
-	} );
-}
-function change_select_waf(id) {
-	$.ajax( {
-		url: "options.py",
-		data: {
-			get_hap_v: 1,
-			serv: $('#serv'+id+' option:selected').val(),
-			token: $('#token').val()
-		},
-		type: "GET",
-		success: function( data ) {	
-			console.log(data)
-			if(parseFloat(data) < parseFloat('1.8')) {	
-				$("#waf"+id).checkboxradio( "disable" );
-			} else {
-				$("#waf"+id).checkboxradio( "enable" );
-			}
-		}
-	} );
-}
 function replace_text(id_textarea, text_var) {
 	var str = $(id_textarea).val();
 	var len = str.length;
@@ -888,103 +886,50 @@ function replace_text(id_textarea, text_var) {
 	var text_val = str.substring(0, beg) + str.substring(end, len);
 	$(id_textarea).text(text_val);
 }
-function changeWafMode(id) {
-	var waf_mode = $('#'+id+' option:selected').val();
-	var server_hostname = id.split('_')[0];
-	 $.ajax( {
-		url: "options.py",
-		data: {
-			change_waf_mode: waf_mode,
-			server_hostname: server_hostname,
-			token: $('#token').val()
-		},
-		type: "GET",
-		success: function( data ) {
-			alert('Do not forget restart WAF server: '+server_hostname)
-			$( '#'+server_hostname+'-select-line' ).addClass( "update", 1000 );										
-			setTimeout(function() {
-				$( '#'+server_hostname+'-select-line' ).removeClass( "update" );
-			}, 2500 );
-		}
-	} ); 
-}
-function createList(color) {
-	if(color == 'white') {
-		list = $('#new_whitelist_name').val() 
-	} else {
-		list = $('#new_blacklist_name').val()
+function createHistroy() {
+	try {
+		var get_history_array = JSON.parse(Cookies.get('history'));
+	}	
+	catch {
+		var get_history_array = ['login.py', 'login.py','login.py'];
+		Cookies.set('history', JSON.stringify(get_history_array), { expires: 1, path: '/app' });
 	}
-	$.ajax( {
-		url: "options.py",
-		data: {
-			bwlists_create: list,
-			color: color,
-			group: $('#group').val(),
-			token: $('#token').val()
-		},
-		type: "GET",
-		success: function( data ) {
-			$("#ajax").html(data); 
-			setTimeout(function() {
-						location.reload();
-					}, 2500 );			 
-		}
-	} );	
 }
-function editList(list, color) {
-	$.ajax( {
-		url: "options.py",
-		data: {
-			bwlists: list,
-			color: color,
-			group: $('#group').val(),
-			token: $('#token').val()
-		},
-		type: "GET",
-		success: function( data ) {
-			if (data.indexOf('danger') != '-1') {
-				$("#ajax").html(data);
-			} else {
-				$('.alert-danger').remove();
-				$('#edit_lists').text(data);
-				$( "#dialog-confirm" ).dialog({
-					resizable: false,
-					height: "auto",
-					width: 650,
-					modal: true,
-					title: "Edit "+color+" list "+list,
-					buttons: {
-						"Just save": function() {
-							$( this ).dialog( "close" );	
-							saveList('save', list, color);
-						},
-						"Save and restart": function() {
-							$( this ).dialog( "close" );	
-							saveList('restart', list, color);
-						},
-						Cancel: function() {
-							$( this ).dialog( "close" );
-						}
-					  }
-				});					
-			} 
+function listHistroy() {	
+	var browse_history = JSON.parse(Cookies.get('history'));
+	var history_link = '';
+	var title = []
+	var link_text = []
+	for(let i = 0; i < browse_history.length; i++){
+		if (i == 0) {
+			if(browse_history[0] == browse_history[1]) {
+				continue
+			}
+			browse_history[0] = browse_history[1];
 		}
-	} );	
-}
-function saveList(action, list, color) {
-	$.ajax( {
-		url: "options.py",
-		data: {
-			bwlists_save: list,
-			bwlists_content: $('#edit_lists').val(),
-			color: color,
-			group: $('#group').val(),
-			bwlists_restart: action,
-			token: $('#token').val()
-		},
-		type: "GET",
-		success: function( data ) {
-			$("#ajax").html(data); 
+		if (i == 1) {			
+			if(browse_history[1] == browse_history[2]) {
+				continue
+			}
+			browse_history[1] = browse_history[2]
 		}
-	} );	
+		if (i == 2) {
+			browse_history[2] = cur_url[0]
+		}
+		$( function() {		
+			$('.menu li ul li').each(function () {
+				var link1 = $(this).find('a').attr('href');
+				var link2 = link1.split('/')[2]
+				if (browse_history[i] == link2) {				
+					title[i] = $(this).find('a').attr('title');
+					link_text[i] = $(this).find('a').text();
+					history_link = '<li><a href="'+browse_history[i]+'" title="'+title[i]+'">'+link_text[i]+'</a></li>'
+					$('#browse_histroy').append(history_link);
+				}
+			});
+		});
+	}
+	Cookies.set('history', JSON.stringify(browse_history), { expires: 1, path: '/app' });
 }
+createHistroy()
+listHistroy()
