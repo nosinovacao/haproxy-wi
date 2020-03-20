@@ -111,3 +111,6 @@ keys
 lists
 log
 configs
+
+#vscode
+.vscode
