@@ -40,21 +40,34 @@
         dest: "{{CONFIG_PATH}}"
         mode: 0644
       when: "'nginx' not in ansible_facts.packages"
+      ignore_errors: yes      
+      
+    - name: Open stat port for firewalld
+      firewalld:
+        port: "{{ STAT_PORT }}/tcp"
+        state: enabled
+        permanent: yes
+        immediate: yes
+      ignore_errors: yes
+      no_log: True
+      debugger: never
       
     - htpasswd:
         path: /etc/nginx/status_page_passwdfile
         name: "{{STATS_USER}}"
         password: "{{STATS_PASS}}"
       when: "'nginx' not in ansible_facts.packages"
-      
-      
+          
     - name: Disble SELINUX in config
-      shell: sed -i 's\SELINUX=enforcing\SELINUX=permissive\' /etc/selinux/config
-  
+      template:
+        src: /var/www/haproxy-wi/app/scripts/ansible/roles/haproxy/templates/selinux.j2
+        dest: /etc/selinux/config
+      ignore_errors: yes
   
     - name: Disble SELINUX in env
       shell: setenforce 0 
-      
+      ignore_errors: yes
+      debugger: never
       
 - hosts: "{{ variable_host }}"
   become: yes

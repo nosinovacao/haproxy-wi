@@ -76,12 +76,16 @@
   
   
 - name: Disble SELINUX in config
-  shell: sed -i 's\SELINUX=enforcing\SELINUX=permissive\' /etc/selinux/config
+  template:
+   src: selinux.j2
+   dest: /etc/selinux/config
+  ignore_errors: yes
   
   
 - name: Disble SELINUX in env
   shell: setenforce 0
-  
+  ignore_errors: yes
+  debugger: never
   
 - name: Enable and start service HAProxy
   systemd:
@@ -119,6 +123,7 @@
     immediate: yes
   ignore_errors: yes
   no_log: True
+  debugger: never
   when: ansible_facts.services["firewalld.service"]['state'] == "running"
   with_items:  [ "{{ STAT_PORT }}", "{{ SOCK_PORT }}" ]
   
