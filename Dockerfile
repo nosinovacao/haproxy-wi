@@ -39,6 +39,7 @@ RUN chown -R www-data:www-data . && \
 
 # Build sql database
 RUN set -ex; \
+	find . -name "*.py" | xargs chmod +x ; \
         if [ "$MYSQL_ENABLE" -eq 0 ]; then \
                 cd /var/www/haproxy-wi/app && \
                 ./create_db.py && \
