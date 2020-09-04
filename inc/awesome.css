@@ -92,6 +92,11 @@
 	font-family: "Font Awesome 5 Solid";
 	content: "\f074";
 }
+.hap1::before {
+	display: none;
+	font-family: "Font Awesome 5 Solid";
+	content: "\f074";
+}
 .backup::before {
 	display: none;
 	font-family: "Font Awesome 5 Solid";
@@ -117,6 +122,11 @@
 	font-family: "Font Awesome 5 Solid";
 	content: "\f021";
 }
+.services::before {
+	display: none;
+	font-family: "Font Awesome 5 Solid";
+	content: "\f144";
+}
 .upload::before {
 	display: none;
 	font-family: "Font Awesome 5 Solid";
@@ -136,7 +146,7 @@
 	display: none;
 	font-family: "Font Awesome 5 Solid";
 	content: "\f004";
-	color: red;
+	color: #ff0000;
 	padding-left: 3px;
 }
 .update-row::before {
@@ -225,8 +235,16 @@
 .fa-stop {
 	color: red !important;
 }
+.service-restart > .fa-sync-alt {
+	color: orange !important;
+}
 .service-reload::after {
 	display: none;
 	font-family: "Font Awesome 5 Solid";
 	content: "\f2f1";	
+}
+.menu-bar::before {
+	display: none;
+	font-family: "Font Awesome 5 Solid";
+	content: "\f0c9";
 }

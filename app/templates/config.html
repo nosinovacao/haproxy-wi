@@ -1,12 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
-<script src="/inc/jquery-linenumbers.js"></script>
+<link rel="stylesheet" href="/inc/codemirror/codemirror.css">
+<script src="/inc/codemirror/codemirror.js"></script>
+<script src="/inc/codemirror/nginx.js"></script>
+<script src="/inc/codemirror/haproxy.js"></script>
 <center>
+	{% if selects|length == 0 %}
+		{% include 'include/getstarted.html' %}
+	{% else %}
 	<h3>Choose server</h3>
 	<p>
 		<form action="{{ action }}" method="post">
 			<a class="ui-button ui-widget ui-corner-all" title="Return back" id="back" onclick="history.go(-2)">Back</a>
-			<input type="hidden" id="service" value="{{service}}" />
+			<input type="hidden" id="service" value="{{service|default('haproxy', true)}}" />
 			<select autofocus required name="serv" id="{{ select_id }}">
 				<option disabled>Choose server</option>
 					{% for select in selects %}
@@ -17,13 +23,12 @@
 						{% endif %}
 					{% endfor %}
 			</select>
-			{% if service != 'keepalived' and service != 'nginx'%}
+			{% if service != 'keepalived' %}
 				<a class="ui-button ui-widget ui-corner-all" title="Show running config" onclick="showConfig()">Open</a>
-				<a class="ui-button ui-widget ui-corner-all" title="Show map" onclick="showMap()">Map</a>	
+				<a class="ui-button ui-widget ui-corner-all" title="View stat" onclick="openStats()">Stat</a>
 			{% endif %}
-			<a class="ui-button ui-widget ui-corner-all" title="View stat" onclick="openStats()">Stat</a>
-			{% if role <= 2 and service == 'nginx'%}
-				<button type="submit" value="open" name="open" class="btn btn-default" title="Edit running config">Edit</button>
+			{% if service != 'keepalived' and service != 'nginx'%}
+				<a class="ui-button ui-widget ui-corner-all" title="Show map" onclick="showMap()">Map</a>	
 			{% endif %}
 			{% if service != 'keepalived' %}					
 				<a class="ui-button ui-widget ui-corner-all" title="Compare configs" onclick="showCompareConfigs()">Compare</a>	
@@ -38,6 +43,7 @@
 			{% endif %}
 		</form>
 	</p>
+	{% endif %}
 	{% if not aftersave %}
 		{% if stderr or error %}
 			{% include 'include/errors.html' %}
@@ -47,11 +53,15 @@
 		{% if role <= 2 %}
 			<div id="config">
 				<h4>Config from {{ serv }}</h4>
+				</center>
 				<form action="{{ action }}" name="saveconfig" method="post">
 					<input type="hidden" value="{{ serv }}" name="serv"> 
 					<input type="hidden" value="{{ cfg }}.old" name="oldconfig"> 
-					<textarea name="config" class="config" rows="35" cols="100">{{ config }}</textarea> 
-					<p>
+					<div style="margin-left: 23%;width: 60%;">
+						<textarea name="config" id="config_text_area" class="config" rows="35" cols="100">{{ config }}</textarea> 
+					</div>
+					<p>					
+					<center>
 					{% if service == 'haproxy' %}
 						<button type="submit" value="test" name="save" class="btn btn-default">Just test</button>
 					{% endif %}
@@ -85,9 +95,22 @@
 	if (cur_url[1].split('&')[1] == 'showCompare' || cur_url[1].split('&')[2] == 'showCompare') {
 		showCompareConfigs();		
 	}
-	if (cur_url[1].split('&')[1] == 'showConfig') {
+	if (cur_url[1].split('&')[2] == 'showConfig') {
 		showConfig();		
 	}	
-	$('textarea').linenumbers({col_width: '25px'});
+	if (cur_url[1].split('&')[0] == 'service=haproxy' || cur_url[1].split('&')[0] == 'service=None') {
+		var myCodeMirror = CodeMirror.fromTextArea(document.getElementById("config_text_area"), {mode: "haproxy", lineNumbers: true});
+	} else {
+		var myCodeMirror = CodeMirror.fromTextArea(document.getElementById("config_text_area"), {mode: "nginx", lineNumbers: true});
+	}
+</script>
+<style>
+.CodeMirror {
+  line-height: 1.2em;
+  height: 50%;
+}
+</style>
+<script>
+	myCodeMirror.refresh();
 </script>
 {% endblock %}

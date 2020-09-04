@@ -30,8 +30,33 @@
 		host = host.replace(/\./g, '\\.');
 		hostnamea.push(host)
 	{% endfor %}
+	$( function() {
+		$( ".sortable" ).sortable({
+			revert: true,
+			placeholder: "ui-state-highlight"
+		});
+		$( ".sortable" ).disableSelection();
+
+		$( ".sortable" ).sortable({
+			stop: function(event, ui) {
+				var itemOrder = $('.sortable').sortable("toArray");
+				for (var i = 0; i < itemOrder.length; i++) {
+					var pos = i;
+					var id = itemOrder[i].split('-')[2]
+					change_pos(pos, id);
+				}
+			}
+		});
+	});
 </script>
-<div id="up-pannel">
+{% if serv %}
+	<div id="up-pannel">
+{% else %}
+	<div id="up-pannel" class="sortable">
+{% endif %}
+	{% if servers|length == 0 %}
+		{% include 'include/getstarted.html' %}
+	{% endif %}
 	{% for s in servers %}
 		{% if serv %}
 			<link href="/inc/chart.min.css" rel="stylesheet">
@@ -45,35 +70,34 @@
 							getWafChartData('{{s.2}}')
 						{% endfor %}
 					{% endif %}
-					showOverviewServer('{{s.1}}', '{{s.2}}', '{{s.0}}');
+					showOverviewServer('{{s.1}}', '{{s.2}}', '{{s.0}}', '{{service}}');
+					showBytes('{{ s.2 }}')
 				}
 				showMetrics();
 			</script>
 		{% endif %}
-	<div class="div-pannel" id="div-pannel-{{s.0}}">
-		<div id="div-server-{{s.0}}" class="div-server-hapwi" {% if service == 'nginx' %}style="height:138px;"{%endif%}>
+		<div id="div-server-{{s.0}}" class="div-server-hapwi" >
 			<div class="server-name">	
+				<input type="hidden" id="server-name-{{s.0}}" value="{{s.1}}" />
+				<input type="hidden" id="service" value="{{service}}" />
 				{% if service == 'nginx' %}
-					<input type="hidden" id="service" value="nginx" />
 					{% if s.5.0.3 == 'active' %}
 						<span class="serverUp server-status" title="Uptime: {{s.5.0.4}}"></span>
 					{% else %}
 						<span class="serverDown server-status" title="Downtime: : {{s.5.0.4}}"></span>
-					{% endif %}
-					{{s.1}}
+					{% endif %}					
 				{% else %}
-					<input type="hidden" id="service" value="haproxy" />
 					{% if s.5 != False %}
 						<span class="serverUp server-status" title="{{s.5.0.2}}"></span>
 					{% else %}
 						<span class="serverDown server-status" title="HAProxy is down"></span>
 					{% endif %}
-					{% if not serv %}
-						<a href="/app/hapservers.py?serv={{s.2}}" title="More about {{s.1}}" style="color: #5d9ceb">{{s.1}}</a>
+				{% endif %}
+				{% if not serv %}
+						<a href="/app/hapservers.py?service={{service}}&serv={{s.2}}" title="More about {{s.1}}" style="color: #5d9ceb">{{s.1}}</a>
 					{% else %}
 						{{s.1}}
 					{% endif %}
-				{% endif %}
 				{% if service == 'haproxy' %}
 					{% if s.6|int() >= 1 %}
 						<img 
@@ -95,20 +119,29 @@
 					<a id="start-{{ s.2 }}" class="start" title="Start {{service}} service">
 						<span class="service-start" onclick="confirmAjaxAction('start', '{{action_service}}', '{{s.2}}')"></span>
 					</a>
-					<a id="stop-{{ s.2 }}" class="stop" title="Stop {{service}} service">
-						<span class="service-stop" onclick="confirmAjaxAction('stop', '{{action_service}}', '{{s.2}}')"></span>
+					<a id="reload-{{ s.2 }}" class="reload" title="Reload {{service}} service">
+						<span class="service-reload" onclick="confirmAjaxAction('reload', '{{action_service}}', '{{s.2}}', '{{s.1}}')"></span>
 					</a>
 					<a id="restart-{{ s.2 }}" class="restart" title="Restart {{service}} service">
-						<span class="service-reload" onclick="confirmAjaxAction('restart', '{{action_service}}', '{{s.2}}')"></span>
+						<span class="service-reload service-restart" onclick="confirmAjaxAction('restart', '{{action_service}}', '{{s.2}}')"></span>
+					</a>
+					<a id="stop-{{ s.2 }}" class="stop" title="Stop {{service}} service">
+						<span class="service-stop" onclick="confirmAjaxAction('stop', '{{action_service}}', '{{s.2}}')"></span>
 					</a>
 				</span>
 				{% endif %}
 			</div>
-			<div class="server-desc">
+			{% if service == 'nginx' %}
+				<div class="server-desc" style="height: 110px;">
+			{% else %}
+				<div class="server-desc">
+			{% endif %}
 				{{s.3}}
 				<br />
 				{% if service == 'nginx' %}
-					Version: {{s.5.0.2}} Process_num: {{s.5.0.5}} {% if s.5.0.3 == 'active' %} Uptime: {% else %} Downtime: {% endif %} {{s.5.0.4}}
+					Version: {{s.5.0.2}} Process_num: {{s.5.0.5}} {% if s.5.0.3 == 'active' %}
+					<br />
+					Uptime: {% else %} Downtime: {% endif %} {{s.5.0.4}}
 				{% else %}
 					{% if s.5.0 is defined %}
 						{{s.5.0.0}} {{s.5.0.1}} {{s.5.0.2}}
@@ -152,11 +185,7 @@
 				</div>
 			{% endif %}
 			<div class="server-act-links">
-			{% if service != 'nginx' %}
-				<a href="/app/config.py?serv={{s.2}}&showConfig" class="ui-button ui-widget ui-corner-all" title="Open running config">Open</a>	
-			{% else %}
-				<a class="ui-button ui-widget ui-corner-all" title="Edit this run config" href="config.py?service={{service}}&serv={{s.2}}&open=open">Edit</a>
-			{% endif %}
+				<a href="/app/config.py?service={{service}}&serv={{s.2}}&showConfig" class="ui-button ui-widget ui-corner-all" title="Open running config">Open</a>	
 				<a href="/app/config.py?service={{service}}&serv={{s.2}}&showCompare" class="ui-button ui-widget ui-corner-all" title="Compare configs">Compare</a>	
 			{% if service != 'nginx' %}
 				<a href="/app/config.py?serv={{s.2}}&showMap" class="ui-button ui-widget ui-corner-all" title="Show map">Map</a>
@@ -169,25 +198,29 @@
 			</div>
 		</div>
 		{% if serv %}
-			<div id="ajax-server-{{s.0}}" class="ajax-server"></div>
 			{% if service == 'haproxy' %}
-			<div class="div-server div-backends">			
-				<div class="server-name backends">	
-					Backends:
-				</div>				
+				<div id="bin_bout"></div>
+			{% endif %}
+			<div id="ajax-server-{{s.0}}" class="ajax-server"></div>
+			<div class="div-server div-backends">
+				<div class="server-name backends">
+					{% if service == 'haproxy' %}
+						Backends:
+					{% else %}
+						Virtual hosts:
+					{% endif %}
+				</div>
 				<div style="margin-top: 10px;" id="top-{{s.1}}"></div>
 			</div>
-			{% endif %}
 		{% endif %}
-	</div>
 	{% endfor %}
 </div>
 {% if serv and service == 'haproxy' %}
-	<div id="refresh" style="text-align: right;margin-right: 105px;clear: both;display: block;padding-top: 20px;margin-bottom: -25px;" title="Refresh metrics" onclick="showMetrics()">
+	<div id="refresh" style="text-align: right;margin-right: 105px;clear: both;display: block;margin-bottom: -25px;" title="Refresh metrics" onclick="showMetrics()">
 		<span class="service-reload"></span>
 	</div>
 	{% for s in servers %}
-		<div class="chart-container" style="display: block; width: 90%; height: 300px;">
+		<div class="chart-container" style="display: block; width: 91.3%; height: 300px;">
 			<canvas id="{{s.2}}" role="img"></canvas>
 		</div>
 		<div class="chart-container" style="display: block; width: 90%; height: 300px;">
@@ -199,8 +232,8 @@
   <p><span class="ui-icon ui-icon-alert" style="float:left; margin:3px 12px 20px 0;"></span>Are you sure?</p>
 </div>
 <script>
-	{% if serv and service == 'haproxy' %}
-		overviewHapserverBackends(ip, hostnamea);
+	{% if serv %}
+		overviewHapserverBackends(ip, hostnamea, '{{service}}');
 	{% endif %}
 	showHapservers(ip, hostnamea, '{{service}}');
 </script>

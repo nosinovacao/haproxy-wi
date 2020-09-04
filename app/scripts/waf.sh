@@ -31,11 +31,11 @@ if [ -f $HAPROXY_PATH/waf/modsecurity.conf  ];then
 	exit 1
 fi
 if hash apt-get 2>/dev/null; then
-	sudo apt install libevent-dev apache2-dev libpcre3-dev libxml2-dev gcc pcre-devel -y
+	sudo apt install libevent-dev apache2-dev libpcre3-dev libxml2-dev gcc pcre-devel wget -y
 else
 	sudo yum install -y http://rpmfind.net/linux/centos/7/os/x86_64/Packages/yajl-devel-2.0.4-4.el7.x86_64.rpm >> /dev/null
 	sudo yum install -y http://mirror.centos.org/centos/7/os/x86_64/Packages/libevent-devel-2.0.21-4.el7.x86_64.rpm >> /dev/null
-	sudo yum install -y httpd-devel libxml2-devel gcc curl-devel pcre-devel -y >> /dev/null
+	sudo yum install -y httpd-devel libxml2-devel gcc curl-devel pcre-devel wget -y >> /dev/null
 fi
 
 wget -O /tmp/modsecurity.tar.gz https://www.modsecurity.org/tarball/2.9.2/modsecurity-2.9.2.tar.gz >> /dev/null
@@ -134,15 +134,17 @@ EOF
 sudo mv /tmp/modsecurity.conf $HAPROXY_PATH/waf/modsecurity.conf 
 wget -O /tmp/unicode.mapping https://github.com/SpiderLabs/ModSecurity/raw/v2/master/unicode.mapping
 sudo mv /tmp/unicode.mapping $HAPROXY_PATH/waf/unicode.mapping
-wget -O /tmp/owasp.tar.gz https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.0.2.tar.gz
+wget -O /tmp/owasp.tar.gz https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/2.2.9.tar.gz
 cd /tmp/
 sudo tar xf /tmp/owasp.tar.gz
-sudo mv /tmp/owasp-modsecurity-crs-3.0.2/crs-setup.conf.example  $HAPROXY_PATH/waf/rules/modsecurity_crs_10_setup.conf 
-sudo mv /tmp/owasp-modsecurity-crs-3.0.2/*rules/* $HAPROXY_PATH/waf/rules/
+sudo mv /tmp/owasp-modsecurity-crs-2.2.9/modsecurity_crs_10_setup.conf.example  $HAPROXY_PATH/waf/rules/modsecurity_crs_10_setup.conf 
+sudo mv /tmp/owasp-modsecurity-crs-2.2.9/*rules/* $HAPROXY_PATH/waf/rules/
 sudo sed -i 's/#SecAction/SecAction/' $HAPROXY_PATH/waf/rules/modsecurity_crs_10_setup.conf 
 sudo sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' $HAPROXY_PATH/waf/modsecurity.conf
 sudo sed -i 's/SecAuditLogParts ABIJDEFHZ/SecAuditLogParts ABIJDEH/' $HAPROXY_PATH/waf/modsecurity.conf
 sudo rm -f /tmp/owasp.tar.gz
+sudo rm -f /tmp/owasp-modsecurity-crs-2.2.9
+sudo rm -f /tmp/haproxy-$VERSION
 
 sudo bash -c cat << EOF > /tmp/waf.service 
 [Unit]
@@ -161,7 +163,7 @@ SyslogIdentifier=waf
 [Install]
 WantedBy=multi-user.target
 EOF
-sudo mv /tmp/waf.service  /etc/systemd/system/multi-user.target.wants/waf.service 
+sudo mv /tmp/waf.service  /etc/systemd/system/waf.service 
 sudo bash -c 'cat << EOF > /etc/rsyslog.d/waf.conf 
 if $programname startswith "waf" then /var/log/waf.log
 & stop
@@ -195,12 +197,13 @@ backend waf
     server waf 127.0.0.1:12345 check
 EOF'
 fi
-	
+
+sudo rm -f /tmp/modsecurity.tar.gz
+sudo rm -rf /tmp/haproxy-$VERSION.tar.gz
+
 sudo systemctl daemon-reload
 sudo systemctl enable waf
 sudo systemctl restart waf
-sudo rm -f /tmp/modsecurity.tar.gz
-sudo rm -rf /tmp/haproxy-$VERSION.tar.gz
 
 if [ $? -eq 1 ]; then
 	echo "error: Can't start Haproxy WAF service <br /><br />"

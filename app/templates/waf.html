@@ -19,6 +19,9 @@
 		hostnamea.push(host)
 	{% endfor %}
 </script>
+{% if servers_all|length == 0 %}
+	{% include 'include/getstarted.html' %}
+{% else %}
 <table class="overview">
 	<tr class="overviewHead">
 		<td class="padding10 first-collumn">
@@ -69,4 +72,8 @@
 	showWafMetrics()
 	showOverviewWaf(ip, hostnamea)
 </script>
+<div class="add-note addName alert-info" style="width: inherit; margin-right: 15px; clear: both;">
+	You can read the description and watch a video about WAF <a href="https://haproxy-wi.org/description.py?description=waf" title="WAF" target="_blank">here</a>
+</div>
+{% endif %}
 {% endblock %}

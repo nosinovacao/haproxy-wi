@@ -31,11 +31,26 @@
       - socat
     state: present
   when: (ansible_facts['os_family'] == "RedHat" or ansible_facts['os_family'] == 'CentOS') and HAPVER|length > 0
+  ignore_errors: yes
   register: install_result
   environment:
     http_proxy: "{{PROXY}}"
     https_proxy: "{{PROXY}}"
     
+    
+- name: Try to install another HAProxy {{HAPVER}} on EL{{ansible_facts['distribution_major_version']}}
+  yum:
+    name: 
+      - http://repo1.haproxy-wi.org/haproxy-{{HAPVER}}.el{{ansible_facts['distribution_major_version']}}.x86_64.rpm
+      - socat
+    state: present
+  register: install_result1
+  when: (ansible_facts['os_family'] == "RedHat" or ansible_facts['os_family'] == 'CentOS') and ("'timed out' in install_result.stderr")
+  ignore_errors: yes
+  environment:
+    http_proxy: "{{PROXY}}"
+    https_proxy: "{{PROXY}}"
+   
     
 - name: set_fact from wi`
   set_fact:
@@ -49,7 +64,7 @@
       - haproxy
       - socat
     state: latest
-  when: (ansible_facts['os_family'] == "RedHat" or ansible_facts['os_family'] == 'CentOS') and ("'FAILED' in install_result.stderr")
+  when: (ansible_facts['os_family'] == "RedHat" or ansible_facts['os_family'] == 'CentOS') and ("'FAILED' in install_result1.stderr")
   environment:
     http_proxy: "{{PROXY}}"
     https_proxy: "{{PROXY}}"
@@ -74,18 +89,27 @@
     mode: 0644
   when: (ansible_facts['os_family'] == "RedHat" or ansible_facts['os_family'] == 'CentOS') and haproxy_from_wi is defined
   
-  
+
+- name: test to see if selinux is running
+  command: getenforce
+  register: sestatus
+  changed_when: false
+
+    
 - name: Disble SELINUX in config
   template:
    src: selinux.j2
    dest: /etc/selinux/config
   ignore_errors: yes
+  when: '"Enforcing" in sestatus.stdout'
   
   
 - name: Disble SELINUX in env
-  shell: setenforce 0
+  shell: setenforce 0 &> /dev/null
   ignore_errors: yes
   debugger: never
+  when: '"Enforcing" in sestatus.stdout'
+  
   
 - name: Enable and start service HAProxy
   systemd:
@@ -102,6 +126,21 @@
   meta: end_play
   when: "'haproxy' in ansible_facts.packages"
     
+    
+- name: Installing HAProxy conf for rsyslog
+  template:
+   src: haproxy_rsyslog.conf.j2
+   dest: /etc/rsyslog.d/haproxy.conf
+  ignore_errors: yes
+  
+  
+- name: Installing rsyslog config
+  template:
+   src: rsyslog.conf
+   dest: /etc/rsyslog.conf
+  ignore_errors: yes
+  notify: restart rsyslog
+  
     
 - name: Get HAProxy version.
   command: haproxy -v
@@ -124,7 +163,7 @@
   ignore_errors: yes
   no_log: True
   debugger: never
-  when: ansible_facts.services["firewalld.service"]['state'] == "running"
+  when: (ansible_facts['os_family'] == "RedHat" or ansible_facts['os_family'] == 'CentOS')  and ansible_facts.services["firewalld.service"]['state'] == "running"
   with_items:  [ "{{ STAT_PORT }}", "{{ SOCK_PORT }}" ]
   
   

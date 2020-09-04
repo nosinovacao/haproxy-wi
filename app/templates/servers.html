@@ -13,12 +13,13 @@
 <input type="hidden" id="new-sshgroup" name="new-sshgroup" value="{{ group }}" >
 <div id="tabs">
 	<ul>
-		<li><a href="#users">Users</a></li>
-		<li><a href="#servers">Servers</a></li>
-		<li><a href="#ssh">SSH credentials</a></li>
-		<li><a href="#checker">Checker</a></li>
-		<li><a href="#installhaproxy">Installation</a></li>
-		<li><a href="#backup">Backup</a></li>
+		<li><a href="#users" title="Servers: Manage users - HAProxy-WI">Users</a></li>
+		<li><a href="#servers" title="Servers: Manage servers - HAProxy-WI">Servers</a></li>
+		<li><a href="#ssh" title="Servers: Manage SSH credentials - HAProxy-WI">SSH credentials</a></li>
+		<li><a href="#checker" title="Servers: Manage checker - HAProxy-WI">Checker</a></li>
+		<li><a href="#installproxy" title="Servers: Proxy service installation - HAProxy-WI">Proxy installation</a></li>
+		<li><a href="#installmon" title="Servers: Monitoring service installation - HAProxy-WI">Monitoring installation</a></li>
+		<li><a href="#backup" title="Servers: Backup configs - HAProxy-WI">Backup</a></li>
 		{% include 'include/login.html' %}
 	</ul>
 	<ul id='browse_histroy'></ul>
@@ -35,7 +36,6 @@
 			</tr>
 			<tr>
 		{% for user in users %}
-			{% if user.5 == group %}
 			<tr id="user-{{user.0}}" class="{{ loop.cycle('odd', 'even') }}">
 				{% include 'include/admin_users.html' %}
 				<td>
@@ -59,7 +59,6 @@
 					<a class="delete" onclick="confirmDeleteUser({{user.0}})" title="Delete user {{user.1}}" style="cursor: pointer;"></a>
 				</td> 
 			</tr>
-			{% endif %}
 		{% endfor %}
 		</table>
 		<br /><span class="add-button" title="Add user" id="add-user-button">+ Add</span>
@@ -87,14 +86,16 @@
 		{% do ssh_group.append(server.3) %}
 			<tr id="server-{{server.0}}" class="{{ loop.cycle('odd', 'even') }}">
 				<td class="padding10 first-collumn">
-					<input type="text" id="hostname-{{server.0}}" value="{{server.1}}" class="form-control">
+					{% set id = 'hostname-' + server.0|string() %}
+					{{ input(id, value=server.1, size='10') }}
 				</td>
 				<td>
 					<span id="ip-{{server.0}}" style="margin-right: 6px;">{{server.2}}</span>
 					<input type="hidden" id="servergroup-{{server.0}}" name="servergroup-{{server.0}}" value="{{ group }}" >					
 				</td>
 				<td>
-					<input type="text" id="port-{{server.0}}" value="{{server.10}}" size="1" class="form-control">
+					{% set id = 'port-' + server.0|string() %}
+					{{ input(id, value=server.10, size='2') }}
 				</td>
 				{% include 'include/admin_servers.html' %}
 			</tr>
@@ -127,7 +128,8 @@
 				{% if ssh.5|string() == group %}
 					<tr style="width: 50%;" id="ssh-table-{{ssh.0}}" class="{{ loop.cycle('odd', 'even') }}">
 						<td class="first-collumn">
-							<input type="text" id="ssh_name-{{ssh.0}}" class="form-control" value="{{ssh.1}}" style="margin-bottom: 23px;">							
+							{% set id = 'ssh_name-' + ssh.0|string() %}
+							{{ input(id, value=ssh.1, size='10') }}							
 						</td>
 						<td class="first-collumn" valign="top" style="padding-top: 15px;">
 							{% if ssh.2 == 1 %}
@@ -138,17 +140,18 @@
 						</td>
 						<td style="padding-top: 15px;">
 							<p>
-								<input type="text" id="ssh_user-{{ssh.0}}" class="form-control" value="{{ssh.3}}">		
+								{% set id = 'ssh_user-' + ssh.0|string() %}
+								{{ input(id, value=ssh.3) }}
 							</p>
 							{% if ssh.2 == 1 %}
-								<input type="password" id="ssh_pass-{{ssh.0}}" class="form-control" value="{{ssh.4}}" style="display: none;">
+								<input type="password" id="ssh_pass-{{ssh.0}}" class="form-control" value="{{ssh.4}}" style="display: none;" autocomplete="off" />
 							{% else %}
-								<input type="password" id="ssh_pass-{{ssh.0}}" class="form-control" value="{{ssh.4}}">
+								<input type="password" id="ssh_pass-{{ssh.0}}" class="form-control" value="{{ssh.4}}" autocomplete="off" />
 							{% endif %}
 							<br>
 						</td>
 						<td>
-							<a class="delete" onclick="confirmDeleteSsh({{ssh.0}})"  style="cursor: pointer;"></a>
+							<a class="delete" onclick="confirmDeleteSsh({{ssh.0}})" title="Delete this SSH credentials" style="cursor: pointer;"></a>
 						</td>
 					</tr>
 				{% endif %}
@@ -167,7 +170,7 @@
 				<td class="padding10 first-collumn">
 					{{ input('new-ssh-add') }}	
 				</td>
-				<td>
+				<td class="first-collumn">
 					<label for="new-ssh_enable">Enable SSH key</label><input type="checkbox" id="new-ssh_enable" checked>
 				</td>
 				<td style="padding-top: 15px;">
@@ -178,7 +181,7 @@
 					<br>
 				</td>
 				<td>
-					<a class="add-admin" id="add-ssh" title="Add new SSH credentials" style="cursor: pointer;"></a>
+					<span class="add-admin" id="add-ssh" title="Add a new SSH credentials" style="cursor: pointer;"></span>
 				</td>
 			</tr>
 		</table>
@@ -203,7 +206,7 @@
 				</td>
 				<td style="padding-top: 15px;">
 					<textarea id="ssh_cert" cols="50" rows="5"></textarea><br /><br />
-					<a class="ui-button ui-widget ui-corner-all" id="ssh_key_upload" title="Upload ssh key" onclick="uploadSsh()">Upload</a>		
+					<button id="ssh_key_upload" title="Upload ssh key" onclick="uploadSsh()">Upload</button>		
 				</td>
 				<td></td>
 			</tr>
@@ -223,15 +226,21 @@
 				</td>
 				<td>Chanel name</td>
 				<td></td>
+				<td></td>
 			</tr>
 			{% for telegram in telegrams %}
 				{% if telegram.3|string() == group %}
 					<tr style="width: 50%;" id="telegram-table-{{telegram.0}}" class="{{ loop.cycle('odd', 'even') }}">
-						<td class="first-collumn" style="padding-top: 20px;">
-							<input type="text" id="telegram-token-{{telegram.0}}" class="form-control" value="{{telegram.1}}" style="margin-bottom: 23px;">	
+						<td class="padding10 first-collumn">
+							{% set id = 'telegram-token-' + telegram.0|string() %}
+							{{ input(id, value=telegram.1) }}
 						</td>
 						<td>
-							<input type="text" id="telegram-chanel-{{telegram.0}}" class="form-control" value="{{telegram.2}}">		
+							{% set id = 'telegram-chanel-' + telegram.0|string() %}
+							{{ input(id, value=telegram.2) }}		
+						</td>
+						<td>
+							<a class="add" onclick="cloneTelegram({{telegram.0}})" id="clone-{{telegram.0}}" title="Clone {{telegram.2}}" style="cursor: pointer;"></a>
 						</td>
 						<td>
 							<a class="delete" onclick="confirmDeleteSsh({{telegram.0}})"  style="cursor: pointer;"></a>
@@ -251,6 +260,7 @@
 					Channel name
 				</td>
 				<td></td>
+				<td></td>
 			</tr>
 			<tr>
 				<td class="padding10 first-collumn">
@@ -262,8 +272,9 @@
 				<td>
 					{{ input('telegram-chanel-add') }}	
 				</td>
+				<td></td>
 				<td>
-					<a class="add-admin" id="add-telegram" title="Add new Telegram channel" style="cursor: pointer;"></a>
+					<span class="add-admin" id="add-telegram" title="Add new Telegram channel" style="cursor: pointer;"></span>
 				</td>
 			</tr>
 		</table>
@@ -272,13 +283,13 @@
 			You can read the description of all parameters <a href="https://haproxy-wi.org/description.py?description=checker" title="Servers description" target="_blank">here</a>
 		</div>
 	</div>
-	<div id="installhaproxy">
+	<div id="installproxy">
 		<table class="overview">
 			<caption><h3>Install HAProxy</h3></caption>
 			<tr class="overviewHead">
 				<td class="padding10 first-collumn">Current version</td>
-				<td class="padding10 first-collumn" style="width: 25%;">Available Versions</td>			
-				<td class="padding10 first-collumn" style="width: 35%;">Server</td>
+				<td class="padding10 first-collumn" style="width: 30%;">Available Versions</td>			
+				<td class="padding10 first-collumn" style="width: 30%;">Server</td>
 				<td>SYN flood protect</td>
 				<td></td>
 			</tr>
@@ -287,8 +298,8 @@
 				</td>
 				<td class="padding10 first-collumn" style="width: 20%;">
 					{% set values = dict() %}
-					{% set values = {'2.0.5-1':'2.0.5-1','2.0.6-1':'2.0.6-1', '2.0.7-1':'2.0.7-1', '2.0.9-1':'2.0.9-1', '2.0.11-1':'2.0.11-1', '2.0.12-1':'2.0.12-1', '2.0.13-1':'2.0.13-1'} %}
-					{{ select('hapver',  values=values, selected='2.0.13-1', required='required') }}
+					{% set values = {'2.0.5-1':'2.0.5-1','2.0.6-1':'2.0.6-1', '2.0.7-1':'2.0.7-1', '2.0.9-1':'2.0.9-1', '2.0.11-1':'2.0.11-1', '2.0.12-1':'2.0.12-1', '2.0.13-1':'2.0.13-1', '2.0.14-1':'2.0.14-1'} %}
+					{{ select('hapver',  values=values, selected='2.0.14-1', required='required') }}
 				</td>
 				<td class="padding10 first-collumn">
 					<select autofocus required name="haproxyaddserv" id="haproxyaddserv">
@@ -302,7 +313,7 @@
 					{{ checkbox('syn_flood', title="Enable SYN flood protect", checked='checked') }}
 				</td>
 				<td>
-					<a class="ui-button ui-widget ui-corner-all" id="install" title="Install HAProxy">Install</a>
+					<span class="ui-button ui-widget ui-corner-all" id="install" title="Install HAProxy">Install</span>
 				</td>
 			</tr>
 		</table>
@@ -310,8 +321,8 @@
 			<caption><h3>Install Nginx</h3></caption>
 			<tr class="overviewHead">
 				<td class="padding10 first-collumn">Current version</td>
-				<td class="padding10 first-collumn" style="width: 25%;">Available Versions</td>			
-				<td class="padding10 first-collumn" style="width: 35%;">Server</td>
+				<td class="padding10 first-collumn" style="width: 30%;">Available Versions</td>			
+				<td class="padding10 first-collumn" style="width: 30%;">Server</td>
 				<td>SYN flood protect</td>
 				<td></td>
 			</tr>
@@ -333,11 +344,108 @@
 					{{ checkbox('nginx_syn_flood', title="Enable SYN flood protect", checked='checked') }}
 				</td>
 				<td>
-					<a class="ui-button ui-widget ui-corner-all" id="nginx_install" title="Install Nginx">Install</a>
+					<span class="ui-button ui-widget ui-corner-all" id="nginx_install" title="Install Nginx">Install</span>
 				</td>
 			</tr>
 		</table>
 		<div id="ajax"></div>
+	</div>
+	
+	<div id="installmon">
+		<table>
+			<caption><h3>Install Grafana and Prometheus servers</h3></caption>
+			<tr class="overviewHead">
+				<td class="padding10 first-collumn">Current instalation</td>
+				<td class="padding10 first-collumn" style="width: 30%;">Available Versions</td>			
+				<td class="padding10 first-collumn" style="width: 30%;">Note</td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td id="cur_grafana_ver" class="padding10 first-collumn">
+				{% if grafana == "Active:" %}
+					Grafana and Prometheus servers have already installed
+				{% else %}
+					There are no Grafana and Prometheus servers
+				{% endif %}
+				</td>
+				<td class="padding10 first-collumn" style="width: 20%;">
+					HAProxy-WI will try to install the latest Grafana and Prometheus server versions
+				</td>
+				<td class="padding10 first-collumn">
+					Before Install any Exporters install Grafana and Prometheus servers first
+				</td>
+				<td>
+					
+				</td>
+				<td>
+					{% if grafana != "Active:" %}
+					<span class="ui-button ui-widget ui-corner-all" id="grafna_install" title="Install Grafana and Prometheus server">Install</span>
+					{% endif %}
+				</td>
+			</tr>
+		</table>
+		<table>
+			<caption><h3>Install HAProxy Exporter</h3></caption>
+			<tr class="overviewHead">
+				<td class="padding10 first-collumn">Current instalation</td>
+				<td class="padding10 first-collumn" style="width: 30%;">Available Versions</td>			
+				<td class="padding10 first-collumn" style="width: 30%;">Server</td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td id="cur_haproxy_exp_ver" class="padding10 first-collumn">
+				</td>
+				<td class="padding10 first-collumn" style="width: 20%;">
+					HAProxy-WI will try to install the latest HAProxy Exporter version
+				</td>
+				<td class="padding10 first-collumn">
+					<select autofocus required name="haproxy_exp_addserv" id="haproxy_exp_addserv">
+						<option disabled selected>Choose server</option>
+						{% for select in servers %}
+								<option value="{{ select.2 }}">{{ select.1 }}</option>
+						{% endfor %}
+					</select>
+				</td>
+				<td>
+				</td>
+				<td>
+					<span class="ui-button ui-widget ui-corner-all" id="haproxy_exp_install" title="Install HAProxy Exporter">Install</span>
+				</td>
+			</tr>
+		</table>
+		<table>
+			<caption><h3>Install Nginx Exporter</h3></caption>
+			<tr class="overviewHead">
+				<td class="padding10 first-collumn">Current instalation</td>
+				<td class="padding10 first-collumn" style="width: 30%;">Available Versions</td>			
+				<td class="padding10 first-collumn" style="width: 30%;">Server</td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td id="cur_nginx_exp_ver" class="padding10 first-collumn">
+				</td>
+				<td class="padding10 first-collumn" style="width: 20%;">
+					HAProxy-WI will try to install the latest Nginx Exporter version
+				</td>
+				<td class="padding10 first-collumn">
+					<select autofocus required name="nginx_exp_addserv" id="nginx_exp_addserv">
+						<option disabled selected>Choose server</option>
+						{% for select in servers %}
+								<option value="{{ select.2 }}">{{ select.1 }}</option>
+						{% endfor %}
+					</select>
+				</td>
+				<td>
+				</td>
+				<td>
+					<span class="ui-button ui-widget ui-corner-all" id="nginx_exp_install" title="Install Nginx Exporter">Install</span>
+				</td>
+			</tr>
+		</table>
+		<div id="ajaxmon"></div>
 	</div>
 	
 	<div id="backup">
@@ -469,6 +577,8 @@
 			$('#hapver').selectmenu('enable');
 			$('#haproxyaddserv').selectmenu('enable');
 			$('#nginxaddserv').selectmenu('enable');
+			$('#haproxy_exp_addserv').selectmenu('enable');
+			$('#nginx_exp_addserv').selectmenu('enable');
 			$('#syn_flood').checkboxradio('enable');
 			$('#nginx_syn_flood').checkboxradio('enable');
 		}, 500 );

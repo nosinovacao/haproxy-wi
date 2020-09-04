@@ -11,7 +11,7 @@ if mysql_enable == '1':
 	mysql_port = funct.get_config_var('mysql', 'mysql_port')
 	import mysql.connector as sqltool
 else:
-	db = "/var/www/haproxy-wi/app/haproxy-wi.db"
+	db = "haproxy-wi.db"
 	import sqlite3 as sqltool
 	
 def check_db():
@@ -131,6 +131,7 @@ def create_table(**kwargs):
 		CREATE TABLE IF NOT EXISTS `backups` ( `id` INTEGER NOT NULL, `server` VARCHAR ( 64 ), `rhost` VARCHAR ( 120 ), `rpath` VARCHAR ( 120 ), `type` VARCHAR ( 120 ), `time` VARCHAR ( 120 ),  cred INTEGER, `description` VARCHAR ( 120 ), PRIMARY KEY(`id`));
 		CREATE TABLE IF NOT EXISTS `waf` (`server_id` INTEGER UNIQUE, metrics INTEGER);
 		CREATE TABLE IF NOT EXISTS `waf_metrics` (`serv` varchar(64), conn INTEGER, `date`  DATETIME default '0000-00-00 00:00:00');
+		CREATE TABLE IF NOT EXISTS user_groups(user_id INTEGER NOT NULL, user_group_id INTEGER NOT NULL, UNIQUE(user_id,user_group_id));
 		"""
 		try:
 			cur.executescript(sql)
@@ -165,8 +166,8 @@ def update_db_v_31(**kwargs):
 	sql.append("INSERT  INTO settings (param, value, section, `desc`) values('proxy', '', 'main', 'Proxy server. Use proto://ip:port');")
 	sql.append("INSERT  INTO settings (param, value, section, `desc`) values('session_ttl', '5', 'main', 'Time to live users sessions. In days');")
 	sql.append("INSERT  INTO settings (param, value, section, `desc`) values('token_ttl', '5', 'main', 'Time to live users tokens. In days');")
-	sql.append("INSERT  INTO settings (param, value, section, `desc`) values('tmp_config_path', '/tmp/', 'main', 'Temp store configs, for check');")
-	sql.append("INSERT  INTO settings (param, value, section, `desc`) values('cert_path', '/etc/ssl/certs/', 'main', 'Path to SSL dir');")
+	sql.append("INSERT  INTO settings (param, value, section, `desc`) values('tmp_config_path', '/tmp/', 'main', 'Temp store configs, for check. Path must exist');")
+	sql.append("INSERT  INTO settings (param, value, section, `desc`) values('cert_path', '/etc/ssl/certs/', 'main', 'Path to SSL dir. Folder owner must be a user which set in the SSH settings. Path must exist');")
 	sql.append("INSERT  INTO settings (param, value, section, `desc`) values('lists_path', 'lists', 'main', 'Path to black/white lists. This is a relative path, begins with $HOME_HAPROXY-WI');")
 	sql.append("INSERT  INTO settings (param, value, section, `desc`) values('local_path_logs', '/var/log/haproxy.log', 'logs', 'Logs save locally, enabled by default');")
 	sql.append("INSERT  INTO settings (param, value, section, `desc`) values('syslog_server_enable', '0', 'logs', 'If exist syslog server for HAproxy logs, enable this option');")
@@ -419,20 +420,197 @@ def update_db_v_42(**kwargs):
 	except sqltool.Error as e:
 		if kwargs.get('silent') != 1:
 			if e.args[0] == 'duplicate column name: haproxy' or e == " 1060 (42S21): Duplicate column name 'haproxy' ":
-				print('DB was update to 4.0.0')
+				print('Updating... go to version 4.2.3')
 			else:
 				print("An error occurred:", e)
 		return False
 	else:
-		print("DB was update to 4.0.0")
+		print("Updating... go to version 4.2.3")
 		return True
 	cur.close() 
 	con.close()
 	
 	
+def update_db_v_4_2_3(**kwargs):
+	con, cur = get_cur()
+	sql = """
+	update settings set section = 'main' where param = 'firewall_enable';
+	"""
+	try:    
+		cur.execute(sql)
+		con.commit()
+	except sqltool.Error as e:
+		if kwargs.get('silent') != 1:
+			if e.args[0] == 'duplicate column name: haproxy' or e == " 1060 (42S21): Duplicate column name 'haproxy' ":
+				print('Updating... go to version 4.3.0')
+			else:
+				print("An error occurred:", e)
+		return False
+	else:
+		return True
+	cur.close() 
+	con.close()
+	
+	
+def update_db_v_4_3(**kwargs):
+	con, cur = get_cur()
+	sql = """
+	CREATE TABLE IF NOT EXISTS user_groups(user_id INTEGER NOT NULL, user_group_id INTEGER NOT NULL, UNIQUE(user_id,user_group_id));
+	"""
+	try:    
+		cur.execute(sql)
+		con.commit()
+	except sqltool.Error as e:
+		if kwargs.get('silent') != 1:
+			if e.args[0] == 'duplicate column name: haproxy' or e == " 1060 (42S21): Duplicate column name 'haproxy' ":
+				print('Updating... go to version 4.3.0')
+			else:
+				print("An error occurred:", e)
+		return False
+	else:
+		return True
+	cur.close() 
+	con.close()
+	
+	
+def update_db_v_4_3_0(**kwargs):
+	con, cur = get_cur()
+	if mysql_enable == '1':
+		sql = """
+		insert OR IGNORE into user_groups(user_id, user_group_id) select user.id, user.groups from user;
+		"""
+	else:
+		sql = """
+		insert OR IGNORE into user_groups(user_id, user_group_id) select id, groups from user;
+		"""
+	try:    
+		cur.execute(sql)
+		con.commit()
+	except sqltool.Error as e:
+		if kwargs.get('silent') != 1:
+			if e.args[0] == 'duplicate column name: haproxy' or e == " 1060 (42S21): Duplicate column name 'haproxy' ":
+				print('Updating... go to version 4.3.1')
+			else:
+				print("An error occurred:", e)
+		return False
+	else:
+		return True
+	cur.close() 
+	con.close()
+	
+	
+def update_db_v_4_3_1(**kwargs):
+	con, cur = get_cur()
+	sql = """
+	ALTER TABLE `servers` ADD COLUMN pos INTEGER NOT NULL DEFAULT 0;
+	"""
+	try:    
+		cur.execute(sql)
+		con.commit()
+	except sqltool.Error as e:
+		if kwargs.get('silent') != 1:
+			if e.args[0] == 'duplicate column name: pos' or e == " 1060 (42S21): Duplicate column name 'pos' ":
+				print('Updating... go to version 4.3.2')
+			else:
+				print("An error occurred:", e)
+		return False
+	else:
+		print("DB was update to 4.3.1")
+		return True
+	cur.close() 
+	con.close()
+	
+	
+def update_db_v_4_3_2(**kwargs):
+	con, cur = get_cur()
+	sql = """
+	INSERT  INTO settings (param, value, section, `desc`) values('ldap_type', '0', 'ldap', 'If 0 then will be used LDAP, if 1 then will be used LDAPS ');
+	"""
+	try:    
+		cur.execute(sql)
+		con.commit()
+	except sqltool.Error as e:
+		if kwargs.get('silent') != 1:
+			if e.args[0] == 'column param is not unique' or e == " 1060 (42S21): column param is not unique ":
+				print('DB was update to 4.3.2')
+			else:
+				print("An error occurred:", e)
+		return False
+	else:
+		print("DB was update to 4.3.2")
+		return True
+	cur.close() 
+	con.close()
+	
+	
+def update_db_v_4_4(**kwargs):
+	con, cur = get_cur()
+	sql = """
+		CREATE TABLE IF NOT EXISTS `smon` (
+			`id`	INTEGER NOT NULL,
+			`ip`	INTEGER,
+			`port` INTEGER,
+			`status` INTEGER DEFAULT 1,
+			`en` INTEGER DEFAULT 1,
+			`desc` varchar(64),
+			`response_time` varchar(64),
+			`time_state` integer default 0,
+			`group` varchar(64),
+			`script` varchar(64),
+			`http` varchar(64),
+			`http_status` INTEGER DEFAULT 1,
+			`body` varchar(64),
+			`body_status` INTEGER DEFAULT 1,
+			`telegram_channel_id` INTEGER,
+			`user_group` INTEGER,
+			UNIQUE(ip, port, http, body),
+			PRIMARY KEY(`id`) 
+		);"""
+	try:    
+		cur.execute(sql)
+		con.commit()
+	except sqltool.Error as e:
+		if kwargs.get('silent') != 1:
+			if e.args[0] == 'duplicate column name: pos' or e == " 1060 (42S21): Duplicate column name 'pos' ":
+				print('Updating... go to version 4.4.2')
+			else:
+				print("An error occurred:", e)
+		return False
+	else:
+		return True
+	cur.close() 
+	con.close()
+
+
+def update_db_v_4_4_2(**kwargs):
+	con, cur = get_cur()
+	sql = """CREATE TABLE IF NOT EXISTS `waf_rules` (`id`	INTEGER NOT NULL,
+				serv varchar(64),
+				`rule_name` varchar(64),
+				`rule_file` varchar(64),
+				`desc` varchar(1024),
+				`en` INTEGER DEFAULT 1,
+				UNIQUE(serv, rule_name),
+				PRIMARY KEY(`id`) ); """
+	try:
+		cur.execute(sql)
+		con.commit()
+	except sqltool.Error as e:
+		if kwargs.get('silent') != 1:
+			if e.args[0] == 'duplicate column name: version' or e == "1060 (42S21): Duplicate column name 'version' ":
+				print('DB was update to 4.4.2')
+			else:
+				print("DB was update to 4.4.2")
+			return False
+		else:
+			return True
+	cur.close()
+	con.close()
+	
+	
 def update_ver(**kwargs):
 	con, cur = get_cur()
-	sql = """update version set version = '4.1.0.0'; """
+	sql = """update version set version = '4.4.1.0'; """
 	try:    
 		cur.execute(sql)
 		con.commit()
@@ -456,6 +634,13 @@ def update_all():
 	update_db_v_4()
 	update_db_v_41()
 	update_db_v_42()
+	update_db_v_4_2_3()
+	update_db_v_4_3()
+	update_db_v_4_3_0()
+	update_db_v_4_3_1()
+	update_db_v_4_3_2()
+	update_db_v_4_4()
+	update_db_v_4_4_2()
 	update_ver()
 		
 	
@@ -473,6 +658,13 @@ def update_all_silent():
 	update_db_v_4(silent=1)
 	update_db_v_41(silent=1)
 	update_db_v_42(silent=1)
+	update_db_v_4_2_3(silent=1)
+	update_db_v_4_3(silent=1)
+	update_db_v_4_3_0(silent=1)
+	update_db_v_4_3_1(silent=1)
+	update_db_v_4_3_2(silent=1)
+	update_db_v_4_4(silent=1)
+	update_db_v_4_4_2(silent=1)
 	update_ver()
 	
 		

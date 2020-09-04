@@ -25,7 +25,11 @@ $( function() {
 				},
 				success: function( data ) {
 					data = data.replace(/\s+/g,' ');
-					response(data.split(" "));
+					if (data.indexOf('error:') != '-1' || data.indexOf('Failed') != '-1') {
+						toastr.error(data);
+					} else {
+						response(data.split(" "));
+					}
 				}						
 			} );
 		},
@@ -43,13 +47,18 @@ $( function() {
 				},
 				success: function( data ) {
 					data = data.replace(/\s+/g,' ');
-					response(data.split(" "));
+					if (data.indexOf('error:') != '-1' || data.indexOf('Failed') != '-1') {
+						toastr.error(data);
+					} else {
+						response(data.split(" "));
+					}
 				}						
 			} );
 		},
 		autoFocus: true,
 		minLength: -1
 	});
+	var wait_mess = '<div class="alert alert-warning">Please don\'t close and don\'t represh page. Wait until the work is completed. This may take some time </div>'
 	var ipformat = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 	$('#create').click(function() {
 		var hap = 0;
@@ -67,13 +76,13 @@ $( function() {
 		$("#ajax").html('')
 		if( $("#master").val() == "" || $("#slave").val() == "" || $("#interface").val() == "" ||
 			$("#vrrp-ip").val() == "") {
-				$("#ajax").html('<div class="alert alert-danger">Please fill in all fields</div>')
+				toastr.warning('Please fill in all fields');
 			} else if(! $("#vrrp-ip").val().match(ipformat)) {
-				$("#ajax").html('<div class="alert alert-danger">Please enter IP in "VRRP IP" field</div>')
+				toastr.warning('Please enter IP in "VRRP IP" field');
 			} else if ($("#master").val() == $("#slave").val() ){
-				$("#ajax").html('<div class="alert alert-danger">Master and slave must be diff servers</div>')
+				toastr.warning('Master and slave must be diff servers');
 			} else {
-				$("#ajax").html('<div class="alert alert-warning">Please don\'t close and don\'t represh page. Wait until the work is completed. This may take some time </div>');
+				$("#ajax").html(wait_mess);
 				$.ajax( {
 					url: "options.py",
 					data: {
@@ -89,17 +98,17 @@ $( function() {
 					type: "POST",
 					success: function( data ) { 
 						data = data.replace(/\s+/g,' ');
-						if (data.indexOf('error') != '-1' || data.indexOf('alert') != '-1' || data.indexOf('FAILED') != '-1') {
-							$("#ajax").html('<div class="alert alert-danger">'+data+'</div>');
+						if (data.indexOf('error:') != '-1' || data.indexOf('alert') != '-1' || data.indexOf('FAILED') != '-1') {
+							toastr.error(data);
 						} else if (data.indexOf('info') != '-1' ){
-							$("#ajax").html('<div class="alert alert-info">'+data+'</div>');
+							toastr.clear();
+							toastr.info(data);
 						} else if (data.indexOf('success') != '-1' ){
-							$('.alert-danger').remove();
-							$("#ajax").html('<div class="alert alert-success">'+data+'</div>');				
+							toastr.clear();
+							toastr.success(data);
 						} else {
-							$('.alert-danger').remove();
-							$('.alert-warning').remove();
-							$("#ajax").html('<div class="alert alert-info">'+data+'</div>');
+							toastr.clear();
+							toastr.info(data);
 						}
 					}
 				} );
@@ -115,11 +124,11 @@ $( function() {
 		$("#ajax").html('')
 		if( $("#master-add").val() == "" || $("#slave-add").val() == "" || $("#interface-add").val() == "" ||
 			$("#vrrp-ip-add").val() == "") {
-				$("#ajax").html('<div class="alert alert-danger">Please fill in all fields</div>')
+				toastr.warning('Please fill in all fields')
 			} else if(! $("#vrrp-ip-add").val().match(ipformat)) {
-				$("#ajax").html('<div class="alert alert-danger">Please enter IP in "VRRP IP" field</div>')
+				toastr.warning('Please enter IP in "VRRP IP" field')
 			} else {
-				$("#ajax").html('<div class="alert alert-warning">Please don\'t close and don\'t represh page. Wait until the work is completed. This may take some time </div>');
+				$("#ajax").html(wait_mess);
 				$.ajax( {
 					url: "options.py",
 					data: {
@@ -133,15 +142,15 @@ $( function() {
 					type: "POST",
 					success: function( data ) { 
 						data = data.replace(/\s+/g,' ');
-						if (data.indexOf('error') != '-1') {
-							$("#ajax").html('<div class="alert alert-danger">'+data+'</div>');
+						if (data.indexOf('error:') != '-1') {
+							toastr.clear();
+							toastr.error(data);
 						} else if (data.indexOf('success') != '-1'){
-							$('.alert-danger').remove();
-							$("#ajax").html('<div class="alert alert-success">'+data+'</div>');				
+							toastr.clear();
+							toastr.success(data);
 						} else {
-							$('.alert-danger').remove();
-							$('.alert-warning').remove();
-							$("#ajax").html('<div class="alert alert-info">'+data+'</div>');
+							toastr.clear();
+							toastr.info(data);
 						}
 					}
 				} );
@@ -153,7 +162,7 @@ $( function() {
 		if ($('#syn_flood').is(':checked')) {
 			syn_flood = '1';
 		}
-		$("#ajax").html('<div class="alert alert-warning">Please don\'t close and don\'t represh page. Wait until the work is completed. This may take some time </div>');
+		$("#ajax").html(wait_mess);
 		$.ajax( {
 			url: "options.py",
 			data: {
@@ -165,20 +174,17 @@ $( function() {
 			type: "POST",
 			success: function( data ) { 
 			data = data.replace(/\s+/g,' ');
-				if (data.indexOf('error') != '-1' || data.indexOf('FAILED') != '-1') {
-					$("#ajax").html('<div class="alert alert-danger">'+data+'</div>');
+				if (data.indexOf('error:') != '-1' || data.indexOf('FAILED') != '-1') {
+					toastr.error(data);
 				} else if (data.indexOf('success') != '-1' ){
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax").html('<div class="alert alert-success">'+data+'</div>');				
+					toastr.remove();
+					toastr.success(data);
 				} else if (data.indexOf('Info') != '-1' ){
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax").html('<div class="alert alert-info">'+data+'</div>');
+					toastr.remove();
+					toastr.info(data);
 				} else {
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax").html('<div class="alert alert-info">'+data+'</div>');
+					toastr.remove();
+					toastr.info(data);
 				}
 			}
 		} );	
@@ -189,7 +195,7 @@ $( function() {
 		if ($('#nginx_syn_flood').is(':checked')) {
 			syn_flood = '1';
 		}
-		$("#ajax").html('<div class="alert alert-warning">Please don\'t close and don\'t represh page. Wait until the work is completed. This may take some time </div>');
+		$("#ajax").html(wait_mess);
 		$.ajax( {
 			url: "options.py",
 			data: {
@@ -200,24 +206,202 @@ $( function() {
 			type: "POST",
 			success: function( data ) { 
 			data = data.replace(/\s+/g,' ');
-				if (data.indexOf('error') != '-1' || data.indexOf('FAILED') != '-1') {
-					$("#ajax").html('<div class="alert alert-danger">'+data+'</div>');
+				if (data.indexOf('error:') != '-1' || data.indexOf('FAILED') != '-1') {
+					toastr.clear();
+					toastr.error(data);
 				} else if (data.indexOf('success') != '-1' ){
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax").html('<div class="alert alert-success">'+data+'</div>');				
+					toastr.clear();
+					toastr.success(data);
 				} else if (data.indexOf('Info') != '-1' ){
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax").html('<div class="alert alert-info">'+data+'</div>');
+					toastr.clear();
+					toastr.info(data);
 				} else {
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax").html('<div class="alert alert-info">'+data+'</div>');
+					toastr.clear();
+					toastr.info(data);
 				}
 			}
 		} );	
 	});	
+	$('#grafna_install').click(function() {
+		$("#ajaxmon").html('')
+		$("#ajaxmon").html(wait_mess);
+		$.ajax( {
+			url: "options.py",
+			data: {
+				install_grafana: '1',
+				token: $('#token').val()
+				},
+			type: "POST",
+			success: function( data ) { 
+			data = data.replace(/\s+/g,' ');
+				if (data.indexOf('FAILED') != '-1') {
+					toastr.clear();
+					toastr.error(data);;
+				} else if (data.indexOf('success') != '-1' ){
+					toastr.clear();
+					toastr.success(data);
+				} else if (data.indexOf('Info') != '-1' ){
+					toastr.clear();
+					toastr.info(data);
+				} else {
+					toastr.clear();
+					toastr.info(data);
+				}
+			}
+		} );	
+	});	
+	$('#haproxy_exp_install').click(function() {
+		$("#ajaxmon").html('')
+		$("#ajaxmon").html(wait_mess);
+		$.ajax( {
+			url: "options.py",
+			data: {
+				haproxy_exp_install: $('#haproxy_exp_addserv').val(),
+				token: $('#token').val()
+				},
+			type: "POST",
+			success: function( data ) { 
+			data = data.replace(/\s+/g,' ');
+				if (data.indexOf('error:') != '-1' || data.indexOf('FAILED') != '-1') {
+					toastr.clear();
+					toastr.error(data);
+				} else if (data.indexOf('success') != '-1' ){
+					toastr.clear();
+					toastr.success(data);
+					$('#cur_haproxy_exp_ver').text('HAProxy expoter is installed');
+					$('#haproxy_exp_install').text('Update');
+				} else if (data.indexOf('Info') != '-1' ){
+					toastr.clear();
+					toastr.info(data);
+				} else {
+					toastr.clear();
+					toastr.info(data);
+				}
+			}
+		} );	
+	});	
+	$('#nginx_exp_install').click(function() {
+		$("#ajaxmon").html('')
+		$("#ajaxmon").html(wait_mess);
+		$.ajax( {
+			url: "options.py",
+			data: {
+				nginx_exp_install: $('#nginx_exp_addserv').val(),
+				token: $('#token').val()
+				},
+			type: "POST",
+			success: function( data ) { 
+			data = data.replace(/\s+/g,' ');
+				if (data.indexOf('error:') != '-1' || data.indexOf('FAILED') != '-1') {
+					toastr.error(data);
+				} else if (data.indexOf('success') != '-1' ){
+					toastr.clear();
+					toastr.success(data);
+					$('#cur_nginx_exp_ver').text('Nginx expoter is installed');
+					$('#nginx_exp_install').text('Update');
+				} else if (data.indexOf('Info') != '-1' ){
+					toastr.clear();
+					toastr.info(data);
+				} else {
+					toastr.clear();
+					toastr.info(data);
+				}
+			}
+		} );	
+	});	
+	$( "#haproxyaddserv" ).on('selectmenuchange',function() {
+		$.ajax( {
+			url: "options.py",
+			data: {
+				get_hap_v: 1,
+				serv: $('#haproxyaddserv option:selected').val(),
+				token: $('#token').val()
+			},
+			type: "POST",
+			success: function( data ) {	
+				data = data.replace(/^\s+|\s+$/g,'');
+				if(data != '') {				
+					data = data+'-1';
+					$('#cur_hap_ver').text(data);
+					$('#install').text('Update');
+					$('#install').attr('title', 'Update HAProxy');
+				} else {
+					$('#cur_hap_ver').text('HAProxy has not installed');
+					$('#install').text('Install');
+					$('#install').attr('title', 'Install HAProxy');
+				}
+			}
+		} );
+	});
+	$( "#nginxaddserv" ).on('selectmenuchange',function() {
+		$.ajax( {
+			url: "options.py",
+			data: {
+				get_nginx_v: 1,
+				serv: $('#nginxaddserv option:selected').val(),
+				token: $('#token').val()
+			},
+			type: "POST",
+			success: function( data ) {	
+				data = data.replace(/^\s+|\s+$/g,'');
+				if(data.indexOf('bash') != '-1') {			
+					$('#cur_nginx_ver').text('Nginx has not installed');
+					$('#nginx_install').text('Install');
+					$('#nginx_install').attr('title', 'Install Nginx');				
+				} else {
+					$('#cur_nginx_ver').text(data);
+					$('#nginx_install').text('Update');
+					$('#nginx_install').attr('title', 'Update Nginx');
+				}
+			}
+		} );
+	});
+	$( "#haproxy_exp_addserv" ).on('selectmenuchange',function() {
+		$.ajax( {
+			url: "options.py",
+			data: {
+				get_exporter_v: 'haproxy_exporter',
+				serv: $('#haproxy_exp_addserv option:selected').val(),
+				token: $('#token').val()
+			},
+			type: "POST",
+			success: function( data ) {	
+				data = data.replace(/^\s+|\s+$/g,'');
+				if(data == 'Active:') {				
+					$('#cur_haproxy_exp_ver').text('HAProxy expoter is installed');
+					$('#haproxy_exp_install').text('Update');
+					$('#haproxy_exp_install').attr('title', 'Update HAProxy expoter');
+				} else {
+					$('#cur_haproxy_exp_ver').text('HAProxy expoter has not installed');
+					$('#haproxy_exp_install').text('Install');
+					$('#haproxy_exp_install').attr('title', 'Install HAProxy expoter');
+				}
+			}
+		} );
+	});
+	$( "#nginx_exp_addserv" ).on('selectmenuchange',function() {
+		$.ajax( {
+			url: "options.py",
+			data: {
+				get_exporter_v: 'nginx_exporter',
+				serv: $('#nginx_exp_addserv option:selected').val(),
+				token: $('#token').val()
+			},
+			type: "POST",
+			success: function( data ) {	
+				data = data.replace(/^\s+|\s+$/g,'');
+				if(data == 'Active:') {				
+					$('#cur_nginx_exp_ver').text('Nginx expoter is installed');
+					$('#nginx_exp_install').text('Update');
+					$('#nginx_exp_install').attr('title', 'Update Nginx expoter');
+				} else {
+					$('#cur_nginx_exp_ver').text('Nginx expoter has not installed');
+					$('#nginx_exp_install').text('Install');
+					$('#nginx_exp_install').attr('title', 'Install Nginx expoter');
+				}
+			}
+		} );
+	});
 	$('#update_haproxy_wi').click(function() {
 		$("#ajax-update").html('')
 		$("#ajax-update").html('<div class="alert alert-warning">Please don\'t close and don\'t represh page. Wait until the work is completed. This may take some time </div>');
@@ -230,55 +414,47 @@ $( function() {
 			type: "POST",
 			success: function( data ) { 
 			data = data.replace(/\s+/g,' ');
-				if (data.indexOf('error') != '-1' || data.indexOf('Failed') != '-1') {
-					$("#ajax").html('<div class="alert alert-danger">'+data+'</div>');
+				if (data.indexOf('error:') != '-1' || data.indexOf('Failed') != '-1') {
+					toastr.error(data);
 				} else if (data.indexOf('Complete!') != '-1'){
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax-update").html('<div class="alert alert-success">Update was success!</div>');				
+					toastr.clear();
+					toastr.success('Update was success!');
 				} else if (data.indexOf('Unauthorized') != '-1') {
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax-update").html('<div class="alert alert-danger">It is seems like you Unauthorized in the HAProxy-WI repository. How to get HAProxy-WI auth you can read <a href="https://haproxy-wi.org/installation.py" title="How to get HAProxy-WI auth">hear</a> </div>');
+					toastr.clear();
+					toastr.error('It is seems like you Unauthorized in the HAProxy-WI repository. How to get HAProxy-WI auth you can read <a href="https://haproxy-wi.org/installation.py" title="How to get HAProxy-WI auth">hear</a>');
 				} else if (data.indexOf('but not installed') != '-1') {
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax-update").html('<div class="alert alert-warning">You have settings for HAProxy-WI repository, but installed HAProxy-WI without repository. Please reinstall with yum or use update.sh</div>');
+					toastr.clear();
+					toastr.error('You have settings for HAProxy-WI repository, but installed HAProxy-WI without repository. Please reinstall with yum');
 				} else if (data.indexOf('No Match for argument') != '-1') {
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax-update").html('<div class="alert alert-warning">It is seems like you do not have HAProxy-WI repository settings. Please read docs for<a href="https://haproxy-wi.org/updates.py">detail</a></div>');
+					toastr.clear();
+					toastr.error('It is seems like you do not have HAProxy-WI repository settings. Please read docs for <a href="https://haproxy-wi.org/updates.py">detail</a>');
 				} else if (data.indexOf('password for') != '-1') {
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax-update").html('<div class="alert alert-warning">It is seems like you need add Apache user to sudoers. Please read docs for<a href="https://haproxy-wi.org/updates.py">detail</a></div>');
+					toastr.clear();
+					toastr.error('It is seems like you need add Apache user to sudoers. Please read docs for<a href="https://haproxy-wi.org/updates.py">detail</a>');
 				} else if (data.indexOf('No packages marked for update') != '-1') {
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax-update").html('<div class="alert alert-info">It is seems like you have the lastest version HAProxy-WI</div>');
+					toastr.clear();
+					toastr.error('It is seems like you have the lastest version HAProxy-WI');
 				} else if (data.indexOf('Connection timed out') != '-1') {
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax-update").html('<div class="alert alert-danger">Cannot connect to HAProxy-WI repository. Connection timed out</div>');
+					toastr.clear();
+					toastr.error('Cannot connect to HAProxy-WI repository. Connection timed out');
 				} else if (data.indexOf('--disable') != '-1') {
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax-update").html('<div class="alert alert-danger">It is seems like you have problem with your repositorys.</div>');
+					toastr.clear();
+					toastr.error('It is seems like you have problem with your repositorys');
 				} else if (data.indexOf('Unauthorized') != '-1') {
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax-update").html('<div class="alert alert-danger">It is seems like you Unauthorized in the HAProxy-WI repository.</div>');
+					toastr.clear();
+					toastr.error('It is seems like you Unauthorized in the HAProxy-WI repository');
 				} else if (data.indexOf('Error: Package') != '-1') {
-					$('.alert-danger').remove();
-					$('.alert-warning').remove();
-					$("#ajax-update").html('<div class="alert alert-danger">'+data+'</div>');
+					toastr.clear();
+					toastr.error(data);
+				} else if (data.indexOf('conflicts with file from') != '-1') {
+					toastr.clear();
+					toastr.error(data);
 				}
 			}
 		} ); 	
 	});	
 	$('#add-group').click(function() {
-		$('#error').remove();	
-		$('.alert-danger').remove();	
+		toastr.clear();
 		$.ajax( {
 			url: "options.py",
 			data: {
@@ -289,13 +465,10 @@ $( function() {
 			},
 			type: "POST",
 			success: function( data ) {
-				if (data.indexOf('error') != '-1') {
-					$("#ajax-group").append(data);
-					$('#errorMess').click(function() {
-						$('#error').remove();
-						$('.alert-danger').remove();
-					});
+				if (data.indexOf('error:') != '-1') {
+					toastr.error(data);
 				} else {
+					toastr.clear();
 					var getId = new RegExp('[0-9]+');
 					var id = data.match(getId);
 					$("#ajax-group").append(data);
@@ -307,8 +480,7 @@ $( function() {
 		} );
 	});	
 	$('#add-ssh').click(function() {
-		$('#error').remove();	
-		$('.alert-danger').remove();	
+		toastr.clear();
 		var ssh_enable = 0;
 		if ($('#new-ssh_enable').is(':checked')) {
 			ssh_enable = '1';
@@ -326,13 +498,10 @@ $( function() {
 			},
 			type: "POST",
 			success: function( data ) {
-				if (data.indexOf('error') != '-1') {
-					$("#ajax-ssh").append(data);
-					$('#errorMess').click(function() {
-						$('#error').remove();
-						$('.alert-danger').remove();
-					});
+				if (data.indexOf('error:') != '-1') {
+					toastr.error(data);
 				} else {
+					toastr.clear();
 					var getId = new RegExp('ssh-table-[0-9]+');
 					var id = data.match(getId) + '';
 					id = id.split('-').pop();;
@@ -352,8 +521,7 @@ $( function() {
 		} );
 	});
 	$('#add-telegram').click(function() {
-		$('#error').remove();	
-		$('.alert-danger').remove();	
+		toastr.clear();
 		$.ajax( {
 			url: "options.py",
 			data: {
@@ -365,12 +533,8 @@ $( function() {
 			},
 			type: "POST",
 			success: function( data ) {
-				if (data.indexOf('error') != '-1') {
-					$("#ajax-telegram").append(data);
-					$('#errorMess').click(function() {
-						$('#error').remove();
-						$('.alert-danger').remove();
-					});
+				if (data.indexOf('error:') != '-1') {
+					toastr.error(data);
 				} else {
 					$("#checker_table").append(data);
 					$( ".newgroup" ).addClass( "update", 1000, callbackGroup );
@@ -404,7 +568,7 @@ $( function() {
 			height: "auto",
 			width: 600,
 			modal: true,
-			title: "Add new user",
+			title: "Add a new user",
 			show: {
 				effect: "fade",
 				duration: 200
@@ -429,7 +593,7 @@ $( function() {
 			height: "auto",
 			width: 600,
 			modal: true,
-			title: "Add new server",
+			title: "Add a new server",
 			show: {
 				effect: "fade",
 				duration: 200
@@ -489,6 +653,34 @@ $( function() {
 	$('#add-backup-button').click(function() {
 		addBackupDialog.dialog('open');		
 	});
+	var addSmonServer = $( "#smon-add-table" ).dialog({
+    			autoOpen: false,
+    			resizable: false,
+    			height: "auto",
+    			width: 600,
+    			modal: true,
+    			title: "Create a new server for monitoring",
+    			show: {
+    				effect: "fade",
+    				duration: 200
+    			},
+    			hide: {
+    				effect: "fade",
+    				duration: 200
+    			},
+    			buttons: {
+    				"Add": function() {
+    					addNewSmonServer();
+    				},
+    				Cancel: function() {
+    					$( this ).dialog( "close" );
+    					clearTips();
+    				}
+    			}
+    		});
+    	$('#add-smon-button').click(function() {
+    		addSmonServer.dialog('open');
+    	});
 	$( "#ajax-users input" ).change(function() {
 		var id = $(this).attr('id').split('-');
 		updateUser(id[1])
@@ -524,6 +716,14 @@ $( function() {
 		var val = $(this).val();
 		updateSettings(id, val);
 	});
+	$( "#ajax-smon input" ).change(function() {
+		var id = $(this).attr('id').split('-');
+		updateSmon(id[2])
+	});
+	$( "#ajax-smon select" ).on('selectmenuchange',function() {
+		var id = $(this).attr('id').split('-');
+		updateSmon(id[2])
+	});
 	$('#new-ssh_enable').click(function() {
 		if ($('#new-ssh_enable').is(':checked')) {
 			$('#ssh_pass').css('display', 'none');
@@ -554,7 +754,7 @@ $( function() {
 	});
 	$('#search_ldap_user').click(function() {
 		var valid = true;
-		$('#error').remove();	
+		toastr.clear();
 		allFields = $( [] ).add( $('#new-username') ) 
 		allFields.removeClass( "ui-state-error" );
 		valid = valid && checkLength( $('#new-username'), "user name", 1 );
@@ -569,14 +769,14 @@ $( function() {
 				type: "POST",
 				success: function( data ) {
 					data = data.replace(/\s+/g,' ');
-					if (data.indexOf('error') != '-1') {
-						alert(data)
+					if (data.indexOf('error:') != '-1') {
+						toastr.error(data);
 						$('#new-email').val('');
 						$('#new-password').attr('readonly', false);	
 						$('#new-password').val('');	
 					} else {
 						var json = $.parseJSON(data);
-						$('.alert-danger').remove();
+						toastr.clear();
 						$('#new-email').val(json[0]);
 						$('#new-username').val(user+'@'+json[1]);					
 						$('#new-password').val('aduser');					
@@ -589,29 +789,77 @@ $( function() {
 	});
 	
 } );
-
-function updateTips( t ) {	
-	var tips = $( ".validateTips" );
-	tips.text( t ).addClass( "alert-warning" );
-}
-function clearTips() {
-	var tips = $( ".validateTips" );
-	tips.html('Form fields tag "<span class="need-field">*</span>" are required.').removeClass( "alert-warning" );
-	allFields = $( [] ).add( $('#new-server-add') ).add( $('#new-ip') ).add( $('#new-port')).add( $('#new-username') ).add( $('#new-password') ) 
+function addNewSmonServer() {
+	var valid = true;
+	allFields = $( [] ).add( $('#new-smon-ip') ).add( $('#new-smon-port') )
 	allFields.removeClass( "ui-state-error" );
-}
-function checkLength( o, n, min ) {
-	if ( o.val().length < min ) {
-		o.addClass( "ui-state-error" );
-		updateTips("Filed "+n+" required");
-        return false;
-	} else {
-		return true;
+	valid = valid && checkLength( $('#new-smon-ip'), "IP", 1 );
+	valid = valid && checkLength( $('#new-smon-port'), "Port", 1 );
+	if ($('#new-smon-proto').val() != '' || $('#new-smon-uri').val() != '') {
+		allFields = $( [] ).add( $('#new-smon-ip') ).add( $('#new-smon-port') )
+			.add( $('#new-smon-proto') ).add( $('#new-smon-uri') );
+		allFields.removeClass( "ui-state-error" );
+		valid = valid && checkLength( $('#new-smon-ip'), "IP", 1 );
+		valid = valid && checkLength( $('#new-smon-port'), "Port", 1 );
+		valid = valid && checkLength( $('#new-smon-proto'), "Protocol", 1 );
+		valid = valid && checkLength( $('#new-smon-uri'), "URI", 1 );
+	}
+	if( $('#new-smon-body').val() != '') {
+		allFields = $( [] ).add( $('#new-smon-ip') ).add( $('#new-smon-port') )
+			.add( $('#new-smon-proto') ).add( $('#new-smon-uri') );
+		allFields.removeClass( "ui-state-error" );
+		valid = valid && checkLength( $('#new-smon-ip'), "IP", 1 );
+		valid = valid && checkLength( $('#new-smon-port'), "Port", 1 );
+		valid = valid && checkLength( $('#new-smon-proto'), "Protocol", 1 );
+		valid = valid && checkLength( $('#new-smon-uri'), "URI", 1 );
+		valid = valid && checkLength( $('#new-smon-body'), "Body", 1 );
+	}
+	var enable = 0;
+	if ($('#new-smon-enable').is(':checked')) {
+		enable = '1';
+	}
+	if (valid) {
+		$.ajax( {
+			url: "options.py",
+			data: {
+				newsmon: $('#new-smon-ip').val(),
+				newsmonport: $('#new-smon-port').val(),
+				newsmonenable: enable,
+				newsmonproto: $('#new-smon-proto').val(),
+				newsmonuri: $('#new-smon-uri').val(),
+				newsmonbody: $('#new-smon-body').val(),
+				newsmongroup: $('#new-smon-group').val(),
+				newsmondescription: $('#new-smon-description').val(),
+				newsmontelegram: $('#new-smon-telegram').val(),
+				token: $('#token').val()
+			},
+			type: "POST",
+			success: function( data ) {
+				data = data.replace(/\s+/g,' ');
+				if (data.indexOf('error:') != '-1' || data.indexOf('unique') != '-1') {
+					toastr.error(data);
+				} else {
+					toastr.clear();
+					$("#ajax-smon").append(data);
+					$(".newserver").addClass( "update", 1000 );
+					$( "input[type=submit], button" ).button();
+					$( "input[type=checkbox]" ).checkboxradio();
+					$( "select" ).selectmenu();
+					$.getScript(awesome);
+					$.getScript('/inc/unsers.js');
+					setTimeout(function() {
+						$( ".newserver" ).removeClass( "update" );
+					}, 2500 );
+					clearTips();
+					$( "#smon-add-table" ).dialog("close" );
+				}	
+			}
+		} );
 	}
 }
 function addUser() {
 	var valid = true;
-	$('#error').remove();	
+	toastr.clear();
 	allFields = $( [] ).add( $('#new-username') ).add( $('#new-password') )
 	allFields.removeClass( "ui-state-error" );
 	valid = valid && checkLength( $('#new-username'), "user name", 1 );
@@ -637,15 +885,14 @@ function addUser() {
 			type: "POST",
 			success: function( data ) {
 				data = data.replace(/\s+/g,' ');
-				if (data.indexOf('error') != '-1') {
-					$("#ajax-users").append(data);
-					$('#errorMess').click(function() {
-						$('#error').remove();
-						$('.alert-danger').remove();
-					});
+				if (data.indexOf('error:') != '-1') {
+					toastr.error(data);
 				} else {
-					$('.alert-danger').remove();
-					$("#ajax-users").append(data);											
+					toastr.clear();
+					$("#ajax-users").append(data);
+					var getId = new RegExp('[0-9]+');
+					var id = data.match(getId);
+					addUserGroup(id[0]);
 				}	
 			}
 		} );
@@ -654,8 +901,7 @@ function addUser() {
 	}
 }
 function addServer() {
-	$('#error').remove();	
-	$('.alert-danger').remove();	
+	toastr.clear()
 	var valid = true;
 	var servername = $('#new-server-add').val();
 	var newip = $('#new-ip').val();
@@ -704,14 +950,10 @@ function addServer() {
 			type: "POST",
 			success: function( data ) {
 				data = data.replace(/\s+/g,' ');
-				if (data.indexOf('error') != '-1') {
-					$("#ajax-servers").append(data);
-					$('#errorMess').click(function() {
-						$('#error').remove();
-						$('.alert-danger').remove();
-					});
+				if (data.indexOf('error:') != '-1') {
+					toastr.error(data);
 				} else {
-					$('.alert-danger').remove();
+					toastr.clear()
 					$("#ajax-servers").append(data);
 					$(".newserver").addClass( "update", 1000 );
 					$( "input[type=submit], button" ).button();
@@ -731,7 +973,7 @@ function addServer() {
 }
 function addBackup() {
 	var valid = true;
-	$('#error').remove();	
+	toastr.clear();
 	allFields = $( [] ).add( $('#backup-server') ).add( $('#rserver') ).add( $('#rpath') ).add( $('#backup-time') ).add( $('#backup-credentials') )
 	allFields.removeClass( "ui-state-error" );
 	valid = valid && checkLength( $('#backup-server'), "backup server ", 1 );
@@ -756,14 +998,10 @@ function addBackup() {
 			type: "POST",
 			success: function( data ) {
 				data = data.replace(/\s+/g,' ');
-				if (data.indexOf('error') != '-1') {
-					$("#ajax-backup").html('<div class="alert alert-danger" style="width: 50%;">'+data+'</div><br /><br />');
-					$('#errorMess').click(function() {
-						$('#error').remove();
-						$('.alert-danger').remove();
-					});
+				if (data.indexOf('error:') != '-1') {
+					toastr.error(data);
 				} else if (data.indexOf('success') != '-1') {
-					$('.alert-danger').remove();
+					toastr.remove();
 					$("#ajax-backup-table").append(data);
 					$(".newbackup").addClass( "update", 1000 );
 					setTimeout(function() {
@@ -772,8 +1010,8 @@ function addBackup() {
 					$( "select" ).selectmenu();
 					$.getScript(awesome);														
 				} else if (data.indexOf('info') != '-1') {
-					$('.alert-danger').remove();
-					$("#ajax-backup").html('<div class="alert alert-info">'+data+'</div><br />');											
+					toastr.remove();
+					toastr.info(data);
 				}	
 			}
 		} );
@@ -782,7 +1020,7 @@ function addBackup() {
 	}
 }
 function updateSettings(param, val) {
-	$('.alert-danger').remove();
+	toastr.clear();
 	$.ajax( {
 		url: "options.py",
 		data: {
@@ -793,14 +1031,10 @@ function updateSettings(param, val) {
 		type: "POST",
 		success: function( data ) {
 			data = data.replace(/\s+/g,' ');
-			if (data.indexOf('error') != '-1') {
-				$("#ajax").append(data);
-				$('#errorMess').click(function() {
-					$('#error').remove();
-					$('.alert-danger').remove();
-				});
+			if (data.indexOf('error:') != '-1') {
+				toastr.error(data);
 			} else {
-				$('.alert-danger').remove();
+				toastr.clear();
 				$("#"+param).parent().parent().addClass( "update", 1000 );
 			setTimeout(function() {
 				$( "#"+param ).parent().parent().removeClass( "update" );
@@ -931,6 +1165,24 @@ function confirmDeleteBackup(id) {
         }
       }
     });
+}
+function confirmDeleteSmon(id) {
+	$( "#dialog-confirm" ).dialog({
+		resizable: false,
+		height: "auto",
+		width: 400,
+		modal: true,
+		title: "Are you sure you want to delete server " +$('#smon-ip-'+id).val() + "?",
+		buttons: {
+			"Delete": function() {
+				$( this ).dialog( "close" );
+				removeSmon(id);
+			},
+			Cancel: function() {
+				$( this ).dialog( "close" );
+			}
+		}
+	});
 }
 function cloneServer(id) {
 	$( "#add-server-button" ).trigger( "click" );
@@ -1113,15 +1365,29 @@ function removeBackup(id) {
 		}					
 	} );	
 }
+function removeSmon(id) {
+	$("#smon-"+id).css("background-color", "#f2dede");
+	$.ajax( {
+		url: "options.py",
+		data: {
+			smondel: id,
+			token: $('#token').val()
+		},
+		type: "POST",
+		success: function( data ) {
+			data = data.replace(/\s+/g,' ');
+			if(data == "Ok ") {
+				$("#smon-"+id).remove();
+			} else {
+				toastr.error(data);
+			}
+		}
+	} );
+}
 function updateUser(id) {
-	$('.alert-danger').remove();
+	toastr.remove();
 	cur_url[0] = cur_url[0].split('#')[0]
-	console.log(cur_url[0])
-	if (cur_url[0] != "servers.py") {
-		var usergroup = $('#usergroup-'+id+' option:selected' ).val();
-	} else {
-		var usergroup = $('#usergroup-'+id ).val();
-	}
+	var usergroup = Cookies.get('group');
 	var activeuser = 0;
 	if ($('#activeuser-'+id).is(':checked')) {
 		activeuser = '1';
@@ -1140,14 +1406,10 @@ function updateUser(id) {
 		type: "POST",
 		success: function( data ) {
 			data = data.replace(/\s+/g,' ');
-			if (data.indexOf('error') != '-1') {
-				$("#ajax-users").append(data);
-				$('#errorMess').click(function() {
-					$('#error').remove();
-					$('.alert-danger').remove();
-				});
+			if (data.indexOf('error:') != '-1') {
+				toastr.error(data);
 			} else {
-				$('.alert-danger').remove();
+				toastr.remove();
 				$("#user-"+id).addClass( "update", 1000 );
 				setTimeout(function() {
 					$( "#user-"+id ).removeClass( "update" );
@@ -1157,7 +1419,7 @@ function updateUser(id) {
 	} );
 }
 function updateGroup(id) {
-	$('#error').remove();	
+	toastr.clear();
 	$.ajax( {
 		url: "options.py",
 		data: {
@@ -1169,14 +1431,10 @@ function updateGroup(id) {
 		type: "POST",
 		success: function( data ) {
 			data = data.replace(/\s+/g,' ');
-			if (data.indexOf('error') != '-1') {
-				$("#ajax-group").append(data);
-				$('#errorMess').click(function() {
-					$('#error').remove();
-					$('.alert-danger').remove();
-				});
+			if (data.indexOf('error:') != '-1') {
+				toastr.error(data);
 			} else {
-				$('.alert-danger').remove();
+				toastr.clear();
 				$("#group-"+id).addClass( "update", 1000 );
 				setTimeout(function() {
 					$( "#group-"+id ).removeClass( "update" );
@@ -1188,7 +1446,7 @@ function updateGroup(id) {
 	} );
 }
 function updateServer(id) {
-	$('.alert-danger').remove();
+	toastr.clear();
 	var typeip = 0;
 	var enable = 0;
 	var haproxy = 0;
@@ -1206,12 +1464,9 @@ function updateServer(id) {
 		enable = '1';
 	}
 	var servergroup = $('#servergroup-'+id+' option:selected' ).val();
-	console.log(cur_url[0])
 	if (cur_url[0].split('#')[0] == "servers.py") {
 		 servergroup = $('#new-server-group-add').val();
-		 console.log('1')
 	}
-	console.log(servergroup)
 	$.ajax( {
 		url: "options.py",
 		data: {
@@ -1231,14 +1486,10 @@ function updateServer(id) {
 		type: "POST",
 		success: function( data ) {
 			data = data.replace(/\s+/g,' ');
-			if (data.indexOf('error') != '-1') {
-				$("#ajax-servers").append(data);
-				$('#errorMess').click(function() {
-					$('#error').remove();
-					$('.alert-danger').remove();
-				});
+			if (data.indexOf('error:') != '-1') {
+				toastr.error(data);
 			} else {
-				$('.alert-danger').remove();
+				toastr.clear();
 				$("#server-"+id).addClass( "update", 1000 );
 				setTimeout(function() {
 					$( "#server-"+id ).removeClass( "update" );
@@ -1248,9 +1499,9 @@ function updateServer(id) {
 	} );
 }
 function uploadSsh() {
-	$('.alert-danger').remove();
+	toastr.clear();
 	if ($( "#ssh-key-name option:selected" ).val() == "Choose server" || $('#ssh_cert').val() == '') {
-		$("#ajax-ssh").html('<div class="alert alert-danger" style="margin: 10px;">All fields must be completed</div>');
+		toastr.error('All fields must be completed');
 	} else {
 		$.ajax( {
 			url: "options.py",
@@ -1263,29 +1514,33 @@ function uploadSsh() {
 			success: function( data ) {
 				data = data.replace(/\s+/g,' ');
 				if (data.indexOf('danger') != '-1') {
-						$("#ajax-ssh").html(data);
+						toastr.error(data);
 					} else if (data.indexOf('success') != '-1') {
-						$('.alert-danger').remove();
-						$("#ajax-ssh").html(data);				
+						toastr.clear();
+						toastr.success(data)
 					} else {
-						$("#ajax-ssh").html('<div class="alert alert-danger">Something wrong, check and try again</div>');
+						toastr.error('Something wrong, check and try again');
 					}
 			}
 		} );
 	}
 }
 function updateSSH(id) {
-	$('#error').remove();	
+	toastr.clear();
 	var ssh_enable = 0;
 	if ($('#ssh_enable-'+id).is(':checked')) {
 		ssh_enable = '1';
+	}
+	var group = $('#sshgroup-'+id).val();
+	if (cur_url[0].split('#')[0] == "servers.py") {
+		 group = $('#new-server-group-add').val();
 	}
 	$.ajax( {
 		url: "options.py",
 		data: {
 			updatessh: 1,
 			name: $('#ssh_name-'+id).val(),
-			group: $('#sshgroup-'+id).val(),
+			group: group,
 			ssh_enable: ssh_enable,
 			ssh_user: $('#ssh_user-'+id).val(),
 			ssh_pass: $('#ssh_pass-'+id).val(),
@@ -1295,14 +1550,10 @@ function updateSSH(id) {
 		type: "POST",
 		success: function( data ) {
 			data = data.replace(/\s+/g,' ');
-			if (data.indexOf('error') != '-1') {
-				$("#ajax-ssh").append(data);
-				$('#errorMess').click(function() {
-					$('#error').remove();
-					$('.alert-danger').remove();
-				});
+			if (data.indexOf('error:') != '-1') {
+				toastr.error(data);
 			} else {
-				$('.alert-danger').remove();
+				toastr.clear();
 				$("#ssh-table-"+id).addClass( "update", 1000 );
 				setTimeout(function() {
 					$( "#ssh-table-"+id ).removeClass( "update" );
@@ -1316,27 +1567,23 @@ function updateSSH(id) {
 	} );
 }
 function updateTelegram(id) {
-	$('#error').remove();	
+	toastr.clear();
 	$.ajax( {
 		url: "options.py",
 		data: {
 			updatetoken: $('#telegram-token-'+id).val(),
 			updategchanel: $('#telegram-chanel-'+id).val(),
-			updategroup: $('#telegramgroup-'+id).val(),
+			updatetelegramgroup: $('#telegramgroup-'+id).val(),
 			id: id,
 			token: $('#token').val()
 		},
 		type: "POST",
 		success: function( data ) {
 			data = data.replace(/\s+/g,' ');
-			if (data.indexOf('error') != '-1') {
-				$("#ajax-ssh").append(data);
-				$('#errorMess').click(function() {
-					$('#error').remove();
-					$('.alert-danger').remove();
-				});
+			if (data.indexOf('error:') != '-1') {
+				toastr.error(data);
 			} else {
-				$('.alert-danger').remove();
+				toastr.clear();
 				$("#telegram-table-"+id).addClass( "update", 1000 );
 				setTimeout(function() {
 					$( "#telegram-table-"+id ).removeClass( "update" );
@@ -1346,15 +1593,10 @@ function updateTelegram(id) {
 	} );
 }
 function updateBackup(id) {
-	$('#error').remove();	
+	toastr.clear();
 	if ($( "#backup-type-"+id+" option:selected" ).val() == "Choose server" || $('#backup-rserver-'+id).val() == '' || $('#backup-rpath-'+id).val() == '') {
-		$("#ajax-backup").html('<div class="alert alert-danger" style="margin: 10px;">All fields must be completed</div>');
+		toastr.error('All fields must be completed');
 	} else {
-		console.log($('#backup-credentials-'+id).val())
-		console.log($('#backup-rpath-'+id).val())
-		console.log($('#backup-type-'+id).val())
-		console.log($('#backup-server-'+id).text())
-		console.log($('#backup-rserver-'+id).val())
 		$.ajax( {
 			url: "options.py",
 			data: {
@@ -1371,14 +1613,10 @@ function updateBackup(id) {
 			type: "POST",
 			success: function( data ) {
 				data = data.replace(/\s+/g,' ');
-				if (data.indexOf('error') != '-1') {
-					$("#ajax-backup").html('<div class="alert alert-danger" style="margin: 10px;">'+data+'</div>');
-					$('#errorMess').click(function() {
-						$('#error').remove();
-						$('.alert-danger').remove();
-					});
+				if (data.indexOf('error:') != '-1') {
+					toastr.error(data);
 				} else {
-					$('.alert-danger').remove();
+					toastr.clear();
 					$("#backup-table-"+id).addClass( "update", 1000 );
 					setTimeout(function() {
 						$( "#backup-table-"+id ).removeClass( "update" );
@@ -1388,9 +1626,45 @@ function updateBackup(id) {
 		} );
 	}
 }
+function updateSmon(id) {
+	toastr.clear();
+	var enable = 0;
+	if ($('#smon-enable-'+id).is(':checked')) {
+		enable = '1';
+	}
+	$.ajax( {
+		url: "options.py",
+		data: {
+			updateSmonIp: $('#smon-ip-'+id).val(),
+			updateSmonPort: $('#smon-port-'+id).val(),
+			updateSmonEn: enable,
+			updateSmonHttp: $('#smon-proto1-'+id).text(),
+			updateSmonBody: $('#smon-body-'+id).text(),
+			updateSmonTelegram: $('#smon-telegram-'+id).val(),
+			updateSmonGroup: $('#smon-group-'+id).val(),
+			updateSmonDesc: $('#smon-desc-'+id).val(),
+			id: id,
+			token: $('#token').val()
+		},
+		type: "POST",
+		success: function( data ) {
+			data = data.replace(/\s+/g,' ');
+			if (data.indexOf('error:') != '-1') {
+				toastr.error(data);
+			} else {
+				toastr.clear();
+				$("#smon-"+id).addClass( "update", 1000 );
+				setTimeout(function() {
+					$( "#smon-"+id ).removeClass( "update" );
+				}, 2500 );
+			}
+		}
+	} );
+}
 function showApacheLog(serv) {
 	var rows = $('#rows').val()
 	var grep = $('#grep').val()
+	var exgrep = $('#exgrep').val()
 	var hour = $('#time_range_out_hour').val()
 	var minut = $('#time_range_out_minut').val()
 	var hour1 = $('#time_range_out_hour1').val()
@@ -1401,6 +1675,7 @@ function showApacheLog(serv) {
 			rows1: rows,
 			serv: serv,
 			grep: grep,
+			exgrep: exgrep,
 			hour: hour,
 			minut:minut,
 			hour1: hour1,
@@ -1410,11 +1685,12 @@ function showApacheLog(serv) {
 		type: "POST",
 		success: function( data ) {
 			$("#ajax").html(data);
-			window.history.pushState("Logs", "Logs", cur_url[0]+"?serv="+serv+"&rows1="+rows+"&grep="+grep+
-															'&hour='+hour+
-															'&minut='+minut+
-															'&hour1='+hour1+
-															'&minut1='+minut1);
+			window.history.pushState("Logs", "Logs", cur_url[0] + "?serv=" + serv + "&rows1=" + rows + "&grep=" + grep +
+					'&exgrep=' + exgrep +
+					'&hour=' + hour +
+					'&minut=' + minut +
+					'&hour1=' + hour1 +
+					'&minut1=' + minut1);
 		}					
 	} );
 }
@@ -1428,21 +1704,20 @@ function checkSshConnect(ip) {
 		},
 		type: "POST",
 		success: function( data ) {
-			if (data.indexOf('danger') != '-1') {
-				$("#checkSshConnect").html(data);
+			if (data.indexOf('error:') != '-1') {
+				toastr.error(data)
 			} else {
-				$("#checkSshConnect").html("<div class='alert alert-success' style='margin: 0; margin-left: 15px;'>Connect is accepted<a title='Close' id='errorMess'><b>X</b></a></div>");
+				toastr.clear();
+				toastr.success('Connect is accepted');
 			}
-			$('#errorMess').click(function() {
-				$('#error').remove();
-				$('.alert-danger').remove();
-				$('.alert-success').remove();
-			});
 		}					
 	} );
 }
 function openChangeUserPasswordDialog(id) {
 	changeUserPasswordDialog(id);
+}
+function openChangeUserGroupDialog(id) {
+	changeUserGroupDialog(id);
 }
 function changeUserPasswordDialog(id) {
 	$( "#user-change-password-table" ).dialog({
@@ -1478,7 +1753,7 @@ function changeUserPassword(id, d) {
 		$('#missmatchpass').show();
 	} else {
 		$('#missmatchpass').hide();
-		$('#error').remove();	
+		toastr.clear();
 		$.ajax( {
 			url: "options.py",
 			data: {
@@ -1489,14 +1764,10 @@ function changeUserPassword(id, d) {
 			type: "POST",
 			success: function( data ) {
 				data = data.replace(/\s+/g,' ');
-				if (data.indexOf('error') != '-1') {
-					$("#ajax-users").append(data);
-					$('#errorMess').click(function() {
-						$('#error').remove();
-						$('.alert-danger').remove();
-					});
+				if (data.indexOf('error:') != '-1') {
+					toastr.error(data);
 				} else {
-					$('.alert-danger').remove();
+					toastr.clear();
 					$("#user-"+id).addClass( "update", 1000 );
 					setTimeout(function() {
 						$( "#user-"+id ).removeClass( "update" );
@@ -1506,4 +1777,118 @@ function changeUserPassword(id, d) {
 			}
 		} );
 	}
+}
+function changeUserGroupDialog(id) {
+	$.ajax( {
+		url: "options.py",
+		data: {
+			getusergroups: id,
+			token: $('#token').val()
+		},
+		type: "POST",
+		success: function( data ) {
+			if (data.indexOf('danger') != '-1') {
+				toastr.error(data);
+			} else {
+				toastr.clear();
+				$('#change-user-groups-form').html(data);
+				$( "#change-user-groups-dialog" ).dialog({
+					resizable: false,
+					height: "auto",
+					width: 450,
+					modal: true,
+					title: "Change "+$('#login-'+id).val()+" groups",
+					buttons: {
+						"Save": function() {
+							$( this ).dialog( "close" );	
+							changeUserGroup(id);
+						},
+						Cancel: function() {
+							$( this ).dialog( "close" );
+						}
+					  }
+				});					
+			} 
+		}
+	} );	
+}
+function changeUserGroup(id) {
+	var groups = $('#usergroup-'+id).val().toString();
+	$.ajax( {
+		url: "options.py",
+		data: {
+			changeUserGroupId: id,
+			changeUserGroups: groups,
+			changeUserGroupsUser: $('#login-'+id).val(),
+			token: $('#token').val()
+		},
+		type: "POST",
+		success: function( data ) {
+			if (data.indexOf('error:') != '-1' || data.indexOf('Failed') != '-1') {
+				toastr.error(data);
+			} else {
+				$("#user-" + id).addClass("update", 1000);
+				setTimeout(function () {
+					$("#user-" + id).removeClass("update");
+				}, 2500);
+			}
+		}			
+	} );
+}
+function addUserGroup(id) {
+	$.ajax( {
+		url: "options.py",
+		data: {
+			changeUserGroupId: id,
+			changeUserGroups: $('#new-group').val(),
+			changeUserGroupsUser: 'new',
+			token: $('#token').val()
+		},
+		type: "POST",
+		success: function( data ) {
+			if (data.indexOf('error:') != '-1' || data.indexOf('Failed') != '-1') {
+				toastr.error(data);
+			} else {
+				$("#user-" + id).addClass("update", 1000);
+				setTimeout(function () {
+					$("#user-" + id).removeClass("update");
+				}, 2500);
+			}
+		}			
+	} );
+}
+function confirmAjaxServiceAction(action, service) {
+	$( "#dialog-confirm-services" ).dialog({
+		resizable: false,
+		height: "auto",
+		width: 400,
+		modal: true,
+		title: "Are you sure you want to "+ action + " " + service+"?",
+		buttons: {
+			"Sure": function() {
+				$( this ).dialog( "close" );
+				ajaxActionServies(action, service)
+			},
+			Cancel: function() {
+				$( this ).dialog( "close" );
+			}
+		}
+	});
+}
+function ajaxActionServies(action, service) {
+	$.ajax( {
+		url: "options.py",
+		data: {
+			action_service: action,
+			serv: service,
+			token: $('#token').val()
+		},
+		success: function( data ) {
+			window.history.pushState("services", "services", cur_url[0].split("#")[0]+"#services")
+			location.reload()
+		},
+		error: function(){
+			alert(w.data_error);
+		}					
+	} );
 }

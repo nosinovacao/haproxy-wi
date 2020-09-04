@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-"
+# -*- coding: utf-8 -*-
 import cgi
 import os, sys
 
@@ -95,23 +95,31 @@ def telegram_send_mess(mess, **kwargs):
 	import telebot
 	from telebot import apihelper
 	import sql
-	
-	telegrams = sql.get_telegram_by_ip(kwargs.get('ip'))
+
+	if kwargs.get('telegram_channel_id'):
+		telegrams = sql.get_telegram_by_id(kwargs.get('telegram_channel_id'))
+	else:
+		telegrams = sql.get_telegram_by_ip(kwargs.get('ip'))
 	proxy = sql.get_setting('proxy')
 	
 	for telegram in telegrams:
 		token_bot = telegram[1]
 		channel_name = telegram[2]
-			
+		
+	if token_bot == '' or channel_name == '':
+		mess = " Fatal: Can't send message. Add Telegram chanel before use alerting at this servers group"
+		print(mess)
+		logging('localhost', mess, haproxywi=1)
+		sys.exit()
+		
 	if proxy is not None and proxy != '' and proxy != 'None':
 		apihelper.proxy = {'https': proxy}
 	try:
 		bot = telebot.TeleBot(token=token_bot)
 		bot.send_message(chat_id=channel_name, text=mess)
-	except:
-		mess = " Fatal: Can't send message. Add Telegram chanel before use alerting at this servers group"
-		print(mess)
-		logging('localhost', mess, haproxywi=1)
+	except Exception as e:
+		print(str(e))
+		logging('localhost', str(e).decode(encoding='UTF-8'), haproxywi=1)
 		sys.exit()
 	
 	
@@ -120,7 +128,7 @@ def check_login(**kwargs):
 	import http.cookies
 	cookie = http.cookies.SimpleCookie(os.environ.get("HTTP_COOKIE"))
 	user_uuid = cookie.get('uuid')
-	ref = os.environ.get("SCRIPT_NAME")
+	ref = os.environ.get("REQUEST_URI")
 
 	sql.delete_old_uuid()
 	
@@ -171,10 +179,9 @@ def return_ssh_keys_path(serv, **kwargs):
 	import sql
 	fullpath = get_config_var('main', 'fullpath')
 	ssh_enable = ''
-	ssh_port = ''
 	ssh_user_name = ''
 	ssh_user_password = ''
-	
+
 	if kwargs.get('id'):	
 		for sshs in sql.select_ssh(id=kwargs.get('id')):
 			ssh_enable = sshs[2]
@@ -213,20 +220,20 @@ def ssh_connect(serv, **kwargs):
 			ssh.connect(hostname = serv, port =  ssh_port, username = ssh_user_name, password = ssh_user_password, timeout=11)
 		return ssh
 	except paramiko.AuthenticationException:
-		return 'Authentication failed, please verify your credentials'
+		return 'error: Authentication failed, please verify your credentials'
 		pass
 	except paramiko.SSHException as sshException:
-		return 'Unable to establish SSH connection: %s ' % sshException
+		return 'error: Unable to establish SSH connection: %s ' % sshException
 		pass
 	except paramiko.BadHostKeyException as badHostKeyException:
-		return 'Unable to verify server\'s host key: %s ' % badHostKeyException
+		return 'error: Unable to verify server\'s host key: %s ' % badHostKeyException
 		pass
 	except Exception as e:
 		if e == "No such file or directory":
-			return '%s. Check ssh key' % e
+			return 'error: %s. Check ssh key' % e
 			pass
 		elif e == "Invalid argument":
-			error = 'Check the IP of the server'
+			error = 'error: Check the IP of the server'
 			pass
 		else:
 			error = e	
@@ -281,26 +288,33 @@ def diff_config(oldcfg, cfg):
 		pass
 		
 		
-def get_sections(config):
+def get_sections(config, **kwargs):
 	record = False
 	return_config = list()
 	with open(config, 'r') as f:
 		for line in f:		
-			if ( 
-				line.startswith('listen') or 
-				line.startswith('frontend') or 
-				line.startswith('backend') or 
-				line.startswith('cache') or 
-				line.startswith('defaults') or 
-				line.startswith('global') or 
-				line.startswith('#HideBlockEnd') or 
-				line.startswith('#HideBlockStart') or
-				line.startswith('peers') or
-				line.startswith('resolvers') or
-				line.startswith('userlist')
-				):		
+			if kwargs.get('service') == 'nginx':
+				if 'server_name' in line:
+					line = line.split('server_name')[1]
+					line = line.split(';')[0]
 					line = line.strip()
 					return_config.append(line)
+			else:	
+				if ( 
+					line.startswith('listen') or 
+					line.startswith('frontend') or 
+					line.startswith('backend') or 
+					line.startswith('cache') or 
+					line.startswith('defaults') or 
+					line.startswith('global') or 
+					line.startswith('#HideBlockEnd') or 
+					line.startswith('#HideBlockStart') or
+					line.startswith('peers') or
+					line.startswith('resolvers') or
+					line.startswith('userlist')
+					):		
+						line = line.strip()
+						return_config.append(line)
 					
 	return return_config
 		
@@ -368,8 +382,60 @@ def rewrite_section(start_line, end_line, config, section):
 			return_config += line
 		
 	return return_config
-
 	
+	
+def get_backends_from_config(serv, backends='', **kwargs):
+	configs_dir = get_config_var('configs', 'haproxy_save_configs_dir')
+	format = 'cfg'
+	record = False
+	
+	try:
+		cfg = configs_dir+get_files(dir=configs_dir, format=format)[0]
+	except Exception as e:
+		logging('localhost', str(e), haproxywi=1)
+		try:
+			cfg = configs_dir + serv + "-" + get_data('config') + '.'+format
+		except:
+			logging('localhost', ' Cannot generate cfg path', haproxywi=1)
+		try:
+			error = get_config(serv, cfg)
+		except:
+			logging('localhost', ' Cannot download config', haproxywi=1)
+			print('error: Cannot get backends')
+			sys.exit()
+
+	with open(cfg, 'r') as f:
+		for line in f:	
+			if backends == 'frontend':
+				if (line.startswith('listen') or line.startswith('frontend')) and 'stats' not in line:
+					line = line.strip()
+					print(line.split(' ')[1], end="<br>")
+	
+
+def get_all_stick_table():
+	import sql
+	haproxy_sock_port = sql.get_setting('haproxy_sock_port')
+	cmd='echo "show table"|nc %s %s |awk \'{print $3}\' | tr -d \'\n\' | tr -d \'[:space:]\'' % (serv, haproxy_sock_port)
+	output, stderr = subprocess_execute(cmd)
+	return output[0]
+
+						
+def get_stick_table(table):
+	import sql
+	haproxy_sock_port = sql.get_setting('haproxy_sock_port')
+	cmd='echo "show table %s"|nc %s %s |awk -F"#" \'{print $2}\' |head -1 | tr -d \'\n\'' % (table, serv, haproxy_sock_port)
+	output, stderr = subprocess_execute(cmd)
+	tables_head = []
+	for i in output[0].split(','):
+		i = i.split(':')[1]
+		tables_head.append(i)
+			
+	cmd='echo "show table %s"|nc %s %s |grep -v "#"' % (table, serv, haproxy_sock_port)
+	output, stderr = subprocess_execute(cmd)
+	
+	return tables_head, output
+	
+
 def install_haproxy(serv, **kwargs):
 	import sql
 	script = "install_haproxy.sh"
@@ -455,8 +521,9 @@ def waf_install(serv, **kwargs):
 	os.system("rm -f %s" % script)
 	
 	stderr = ssh_command(serv, commands, print_out="1")
-	if stderr is None:
-		sql.insert_waf_metrics_enable(serv, "0")
+	
+	sql.insert_waf_metrics_enable(serv, "0")
+	sql.insert_waf_rules(serv)
 		
 
 def install_nginx(serv):
@@ -541,18 +608,23 @@ def upload(serv, path, file, **kwargs):
 	try:
 		ssh = ssh_connect(serv)
 	except Exception as e:
-		error = e
+		error = e.args
 		logging('localhost', str(e.args[0]), haproxywi=1)
+		print(' Cannot upload '+file+' to '+full_path+' to server: '+serv+' error: '+str(e.args))
 		pass
 		
 	try:
 		sftp = ssh.open_sftp()
 	except Exception as e:
+		error = e.args
 		logging('localhost', str(e.args[0]), haproxywi=1)
+		print('Cannot upload '+file+' to '+full_path+' to server: '+serv+' error: '+str(e.args))
 		
 	try:
 		file = sftp.put(file, full_path)
 	except Exception as e:
+		error = e.args
+		print('Cannot upload '+file+' to '+full_path+' to server: '+serv+' error: '+str(e.args))
 		logging('localhost', ' Cannot upload '+file+' to '+full_path+' to server: '+serv+' Error: '+str(e.args), haproxywi=1)
 		pass
 		
@@ -562,6 +634,7 @@ def upload(serv, path, file, **kwargs):
 	except Exception as e:
 		error = e.args
 		logging('localhost', str(error[0]), haproxywi=1)
+		print('Cannot upload '+file+' to '+full_path+' to server: '+serv+' error: '+str(e.args))
 		pass
 
 	return str(error)
@@ -596,17 +669,19 @@ def upload_and_restart(serv, cfg, **kwargs):
 			commands = [ "sudo mv -f " + tmp_file + " " + config_path + " && sudo nginx -t -q && sudo systemctl reload nginx" ]	
 		else:
 			commands = [ "sudo mv -f " + tmp_file + " " + config_path + " && sudo nginx -t -q && sudo systemctl restart nginx" ]	
+		if sql.get_setting('firewall_enable') == "1":
+			commands[0] += open_port_firewalld(cfg, serv=serv, service='nginx')
 	else:
 		if kwargs.get("just_save") == "test":
-			commands = [ "sudo haproxy  -q -c -f " + tmp_file + "&& sudo rm -f " + tmp_file ]
+			commands = [ "sudo haproxy  -q -c -f " + tmp_file + " && sudo rm -f " + tmp_file ]
 		elif kwargs.get("just_save") == "save":
-			commands = [ "sudo haproxy  -q -c -f " + tmp_file + "&& sudo mv -f " + tmp_file + " " + config_path ]
+			commands = [ "sudo haproxy  -q -c -f " + tmp_file + " && sudo mv -f " + tmp_file + " " + config_path ]
 		elif kwargs.get("just_save") == "reload":
-			commands = [ "sudo haproxy  -q -c -f " + tmp_file + "&& sudo mv -f " + tmp_file + " " + config_path + " && sudo systemctl reload haproxy" ]	
+			commands = [ "sudo haproxy  -q -c -f " + tmp_file + " && sudo mv -f " + tmp_file + " " + config_path + " && sudo systemctl reload haproxy" ]
 		else:
-			commands = [ "sudo haproxy  -q -c -f " + tmp_file + "&& sudo mv -f " + tmp_file + " " + config_path + " && sudo systemctl restart haproxy" ]	
+			commands = [ "sudo haproxy  -q -c -f " + tmp_file + " && sudo mv -f " + tmp_file + " " + config_path + " && sudo systemctl restart haproxy" ]
 		if sql.get_setting('firewall_enable') == "1":
-			commands[0] += open_port_firewalld(cfg)
+			commands[0] += open_port_firewalld(cfg, serv=serv)
 	error += str(upload(serv, tmp_file, cfg, dir='fullpath'))
 
 	try:
@@ -632,7 +707,7 @@ def master_slave_upload_and_restart(serv, cfg, just_save, **kwargs):
 	return error
 	
 		
-def open_port_firewalld(cfg):
+def open_port_firewalld(cfg, serv, **kwargs):
 	try:
 		conf = open(cfg, "r")
 	except IOError:
@@ -642,16 +717,23 @@ def open_port_firewalld(cfg):
 	ports = ''
 	
 	for line in conf:
-		if "bind" in line:
-			bind = line.split(":")
-			bind[1] = bind[1].strip(' ')
-			bind = bind[1].split("ssl")
-			bind = bind[0].strip(' \t\n\r')
-			firewalld_commands += ' sudo firewall-cmd --zone=public --add-port=%s/tcp --permanent -q &&' % bind
-			ports += bind+' '
+		if kwargs.get('service') == 'nginx':
+			if "listen " in line and '#' not in line:			
+				listen = ' '.join(line.split())
+				listen = listen.split(" ")[1]
+				listen = listen.split(";")[0]
+				ports += listen+' '
+		else:
+			if "bind" in line:
+				bind = line.split(":")
+				bind[1] = bind[1].strip(' ')
+				bind = bind[1].split("ssl")
+				bind = bind[0].strip(' \t\n\r')
+				firewalld_commands += ' sudo firewall-cmd --zone=public --add-port=%s/tcp --permanent -q &&' % bind
+				ports += bind+' '
 				
 	firewalld_commands += 'sudo firewall-cmd --reload -q' 
-	logging('localhost', ' Next ports have opened: '+ports+ ' has opened ')
+	logging(serv, ' Next ports have been opened: '+ports+ ' has opened ')
 	return firewalld_commands
 	
 	
@@ -671,11 +753,18 @@ def check_haproxy_config(serv):
 def show_log(stdout, **kwargs):
 	i = 0
 	out = ''
+	if kwargs.get('grep'):
+		import re
+		grep = kwargs.get('grep')
+		grep = re.sub(r'[?|$|.|!|^|*|\]|\[|,| |]',r'', grep)
+		
 	for line in stdout:		
 		if kwargs.get("html") != 0:
 			i = i + 1
+			if kwargs.get('grep'):
+				line = line.replace(grep, '<span style="color: red; font-weight: bold;">'+grep+'</span>');
 			line_class = "line3" if i % 2 == 0 else "line"
-			out += '<div class="'+line_class+'">' + escape_html(line) + '</div>'
+			out += '<div class="'+line_class+'">' + line + '</div>'
 		else:
 			out += line
 		
@@ -684,39 +773,76 @@ def show_log(stdout, **kwargs):
 		
 def show_haproxy_log(serv, rows=10, waf='0', grep=None, hour='00', minut='00', hour1='24', minut1='00', service='haproxy', **kwargs):
 	import sql
+	exgrep = form.getvalue('exgrep')
 	date = hour+':'+minut
 	date1 = hour1+':'+minut1
+	
 	if grep is not None:
-        	grep_act  = '|grep'
+        	grep_act  = '|egrep "%s"' % grep
 	else:
 		grep_act = ''
-		grep = ''
-
-	syslog_server_enable = sql.get_setting('syslog_server_enable')
-	if syslog_server_enable is None or syslog_server_enable == "0":
-		if service == 'nginx':
-			local_path_logs = sql.get_setting('nginx_path_error_logs')
-			commands = [ "sudo cat %s| awk '$2>\"%s:00\" && $2<\"%s:00\"' |tail -%s  %s %s" % (local_path_logs, date, date1, rows, grep_act, grep) ]
-		else:
-			local_path_logs = sql.get_setting('local_path_logs')
-			commands = [ "sudo cat %s| awk '$3>\"%s:00\" && $3<\"%s:00\"' |tail -%s  %s %s" % (local_path_logs, date, date1, rows, grep_act, grep) ]
-		syslog_server = serv	
-			
 		
+	if exgrep is not None:
+        	exgrep_act  = '|egrep -v "%s"' % exgrep
 	else:
-		commands = [ "sudo cat /var/log/%s/syslog.log | sed '/ %s:00/,/ %s:00/! d' |tail -%s  %s %s" % (serv, date, date1, rows, grep_act, grep) ]
-		syslog_server = sql.get_setting('syslog_server')
-	
-	if waf == "1":
-		local_path_logs = '/var/log/modsec_audit.log'
-		commands = [ "sudo cat %s |tail -%s  %s %s" % (local_path_logs, rows, grep_act, grep) ]	
-	
-	if kwargs.get('html') == 0:
-		a = ssh_command(syslog_server, commands)
-		return show_log(a, html=0)	
-	else:
-		return ssh_command(syslog_server, commands, show_log='1')
+		exgrep_act = ''
 
+	if service == 'nginx' or service == 'haproxy':
+		syslog_server_enable = sql.get_setting('syslog_server_enable')
+		if syslog_server_enable is None or syslog_server_enable == "0":
+			if service == 'nginx':
+				local_path_logs = sql.get_setting('nginx_path_error_logs')
+				commands = [ "sudo cat %s| awk '$2>\"%s:00\" && $2<\"%s:00\"' |tail -%s %s %s" % (local_path_logs, date, date1, rows, grep_act, exgrep_act) ]
+			else:
+				local_path_logs = sql.get_setting('local_path_logs')
+				commands = [ "sudo cat %s| awk '$3>\"%s:00\" && $3<\"%s:00\"' |tail -%s %s %s" % (local_path_logs, date, date1, rows, grep_act, exgrep_act) ]
+			syslog_server = serv	
+		else:
+			commands = [ "sudo cat /var/log/%s/syslog.log | sed '/ %s:00/,/ %s:00/! d' |tail -%s %s %s %s" % (serv, date, date1, rows, grep_act, grep, exgrep_act) ]
+			syslog_server = sql.get_setting('syslog_server')
+		
+		if waf == "1":
+			local_path_logs = '/var/log/modsec_audit.log'
+			commands = [ "sudo cat %s |tail -%s %s %s" % (local_path_logs, rows, grep_act, exgrep_act) ]	
+		
+		if kwargs.get('html') == 0:
+			a = ssh_command(syslog_server, commands)
+			return show_log(a, html=0, grep=grep)	
+		else:
+			return ssh_command(syslog_server, commands, show_log='1', grep=grep)
+	elif service == 'apache':
+		apache_log_path = sql.get_setting('apache_log_path')
+		
+		if serv == 'haproxy-wi.access.log':
+			cmd="cat %s| awk -F\"/|:\" '$3>\"%s:00\" && $3<\"%s:00\"' |tail -%s %s %s" % (apache_log_path+"/"+serv, date, date1, rows, grep_act, exgrep_act)
+		elif serv == 'haproxy-wi.error.log':
+			cmd="cat %s| awk '$4>\"%s:00\" && $4<\"%s:00\"' |tail -%s %s %s" % (apache_log_path+"/"+serv, date, date1, rows, grep_act, exgrep_act)
+		elif serv == 'fail2ban.log':
+			cmd="cat %s| awk -F\"/|:\" '$3>\"%s:00\" && $3<\"%s:00\"' |tail -%s %s %s" % ("/var/log/"+serv, date, date1, rows, grep_act, exgrep_act)
+
+		output, stderr = subprocess_execute(cmd)
+		
+		return show_log(output, grep=grep)
+	elif service == 'internal':
+		log_path = get_config_var('main', 'log_path')
+		logs_files = get_files(log_path, format="log")
+		for key, value in logs_files:
+			if int(serv) == key:
+				serv = value
+				break
+		else:
+			print('Haha')
+			sys.exit()
+			
+		if serv == 'backup.log':
+			cmd="cat %s| awk '$2>\"%s:00\" && $2<\"%s:00\"' |tail -%s %s %s" % (log_path + serv, date, date1, rows, grep_act, exgrep_act)
+		else:
+			cmd="cat %s| awk '$3>\"%s:00\" && $3<\"%s:00\"' |tail -%s %s %s" % (log_path + serv, date, date1, rows, grep_act, exgrep_act)
+		
+		output, stderr = subprocess_execute(cmd)
+		
+		return show_log(output, grep=grep)
+		
 	
 def haproxy_wi_log(**kwargs):
 	log_path = get_config_var('main', 'log_path')
@@ -738,7 +864,10 @@ def haproxy_wi_log(**kwargs):
 			
 def show_ip(stdout):
 	for line in stdout:
-		print(line)
+		if "Permission denied" in line:
+			print('error: '+line)
+		else:
+			print(line)
 		
 		
 def server_status(stdout):	
@@ -765,7 +894,7 @@ def ssh_command(serv, commands, **kwargs):
 		if kwargs.get("ip") == "1":
 			show_ip(stdout)
 		elif kwargs.get("show_log") == "1":
-			return show_log(stdout)
+			return show_log(stdout, grep=kwargs.get("grep"))
 		elif kwargs.get("server_status") == "1":
 			server_status(stdout)
 		elif kwargs.get('print_out'):
@@ -784,7 +913,7 @@ def ssh_command(serv, commands, **kwargs):
 		ssh.close()
 	except:
 		logging('localhost', ' '+str(ssh), haproxywi=1)
-		return "<div class='alert alert-danger' style='margin: 0;'>"+str(ssh)+"<a title='Close' id='errorMess'><b>X</b></a></div>"
+		return "error: "+str(ssh)
 		pass
 
 
@@ -835,22 +964,21 @@ def get_files(dir = get_config_var('configs', 'haproxy_save_configs_dir'), forma
 		file = set()
 	return_files = set()
 	i = 0
-	for files in glob.glob(os.path.join(dir,'*.'+format)):	
+	for files in sorted(glob.glob(os.path.join(dir,'*.'+format))):		
 		if format == 'log':
 			file += [(i, files.split('/')[5])]
-		else:
+		else:		
 			file.add(files.split('/')[-1])
 		i += 1
-	files = sorted(file, reverse=True)
-
+	files = file
 	if format == 'cfg' or format == 'conf':
-		for file in files:
+		for file in files:		
 			ip = file.split("-")
 			if serv == ip[0]:
-				return_files.add(file)
+				return_files.add(file)			
 		return sorted(return_files, reverse=True)
 	else: 
-		return files
+		return file
 	
 	
 def get_key(item):
@@ -929,7 +1057,7 @@ def out_error(e):
 		error = e
 	else:
 		error = e.args[0]
-	print('<span class="alert alert-danger" style="height: 20px;margin-bottom: 20px;" id="error">An error occurred: ' + error + ' <a title="Close" id="errorMess"><b>X</b></a></span>')
+	print('error: '+error)
 	
 
 def get_users_params(**kwargs):
@@ -955,9 +1083,14 @@ def check_group(group, role_id):
 	import sql
 	cookie = http.cookies.SimpleCookie(os.environ.get("HTTP_COOKIE"))
 	user_id = cookie.get('uuid')
-	user_group = sql.get_user_group_by_uuid(user_id.value)
-	if user_group == group or user_group == '1' or role_id == 1:
+	id = sql.get_user_id_by_uuid(user_id.value)
+	if sql.select_user_groups(id, check_id=group) or role_id == 1:
 		return True
 	else:
 		logging('localhost', ' has tried to actions in not own group ', haproxywi=1, login=1)
 		return False
+		
+		
+def check_service(serv, service_name):
+	commands = [ "systemctl status "+service_name+" |grep Active |awk '{print $1}'" ]
+	return ssh_command(serv, commands)

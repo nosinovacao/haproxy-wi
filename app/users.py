@@ -16,11 +16,23 @@ try:
 	users = sql.select_users()
 	settings = sql.get_setting('', all=1)
 	ldap_enable = sql.get_setting('ldap_enable')
+	services = []
+	services_name = {"checker_haproxy":"Master checker service", 
+					"keep_alive":"Auto start service", 
+					"metrics_haproxy":"Master metrics service", 
+					"prometheus":"Prometheus service", 
+					"grafana-server":"Grafana service", 
+					"smon":"Simple monitoring network ports",
+					"fail2ban": "Fail2ban service"}
+	for s, v in services_name.items():
+		cmd = "systemctl status %s |grep Act |awk  '{print $2}'" %s
+		status, stderr = funct.subprocess_execute(cmd)
+		services.append([s, status, v])
 except:
 	pass
 
 
-template = template.render(title = "Admin area: users manage",
+template = template.render(title = "Admin area: Manage users",
 							role = role,
 							user = user,
 							users = users,
@@ -34,5 +46,6 @@ template = template.render(title = "Admin area: users manage",
 							versions = funct.versions(),
 							settings = settings,
 							backups = sql.select_backups(),
+							services = services,
 							ldap_enable = ldap_enable)
 print(template)

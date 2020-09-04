@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block content %}	
+<link href="/inc/chart.min.css" rel="stylesheet">
+<script src="/inc/metrics.js"></script>
+<script src="/inc/chart.min.js"></script>
 <script src="/inc/overview.js"></script>
 <script>
 	$("#secIntervals").css("display", "none");
@@ -31,7 +34,7 @@
 			</a>
 		</td>
 		<td class="padding10">			
-			Keealived
+			Keepalived
 		</td>
 		<td class="padding10">
 			<a href="/app/waf.py" title="WAf servers overview" class="logs_link">
@@ -48,9 +51,9 @@
 		<tr class="{{ loop.cycle('odd', 'even') }}" id="{{s[1]}}"></tr>
 	{% endfor %}
 </table>
-<table class="overview-wi" style="height: 170;">
+<table class="overview-wi">
 	<tr class="overviewHead" style="height: 40px;">
-		<td class="padding10 first-collumn-wi">
+		<td class="padding10 first-collumn-wi" colspan="2">
 			{% if role <= 1 %}
 				<a href="/app/viewlogs.py?viewlogs={{haproxy_wi_log_id}}&rows=10&grep=&hour=00&minut=00&hour1=24&minut1=00" title="View HAProxy-WI logs" class="logs_link">			
 					HAProxy-WI server status
@@ -66,17 +69,21 @@
 		</td>
 	</tr>		
 	<tr>
-		<td style="width:90%" colspan="2">
-			<pre style="margin: 0;" id="ajaxHapwi">
-			</pre>
+		<td style="width:100%" colspan="2">					
+			<div style="height: 140px;width: 50%;float: left; margin:0; padding:0;">
+				<canvas id="cpu" role="img"></canvas>
+			</div>
+			<div style="height: 140px;width: 50%;float: right;margin:0; padding:0;">
+				<canvas id="ram" role="img"></canvas>
+			</div>		
 		</td>
 	</tr>
 </table>
-<table class="overview-wi" style="height: 165;">
-	<tr class="overviewHead" style="height: 40px;">	
-		<th class="padding10 first-collumn-wi" colspan=4>
+<table class="overview-wi">
+	<tr class="overviewHead">
+		<td class="padding10 first-collumn-wi" colspan=4>
 			Tools status
-		</th>
+		</td>
 	</tr>
 	<tr>
 		<td class="padding10 first-collumn-wi">
@@ -110,24 +117,36 @@
 		<td class="third-collumn-wi">
 			{% if keep_alive|int() >= 1 %}
 				<span title="running {{ keep_alive }} processe"><span class="serverUp server-status"></span></span>
+				{% if role <= 1 %}
+					<a href="/app/viewlogs.py?viewlogs={{keep_alive_log_id}}&rows=10&grep=&hour=00&minut=00&hour1=24&minut1=00" title="View keep alive logs" class="logs_link">
+						<span>Auto start</span>
+					</a>
+				{% else %}
+					<span>Auto star</span>
+				{% endif %}
 			{% else %}
-				<span class="serverDown server-status"></span> 
+				<span class="serverDown server-status"></span>
+				{% if role <= 1 %}
+					<a href="/app/users.py#services" title="Start Auto star - HAProxy-WI service" class="logs_link">
+						Auto start
+					</a>
+				{% else %}
+					<span>Auto star</span>
+				{% endif %}
 			{% endif %}
-			{% if role <= 1 %}
-			<a href="/app/viewlogs.py?viewlogs={{keep_alive_log_id}}&rows=10&grep=&hour=00&minut=00&hour1=24&minut1=00" title="View keep alive logs" class="logs_link">
-				<span>Auto start</span>
-			</a>
-			{% else %}
-				<span>Auto star</span>
-			{% endif %}
+
 		</td>
 	</tr>
-	<tr>
+	<tr class="even">
 		<td class="padding10 first-collumn-wi">
 		{% if metrics_worker|int() >= 1 %}
-			<span title="running {{metrics_worker}} worker processes"><span class="serverUp server-status"></span> 
+			<span title="running {{metrics_worker}} worker processes"><span class="serverUp server-status"></span></span>
 		{% else %}
-			<span title="running {{metrics_worker}} worker processes"><span class="serverDown server-status"></span> 
+			{% if is_metrics_worker|int == 0 %}
+			<span title="There is not jobs for metrics"><span class="serverNone server-status"></span></span>
+			{% else %}
+			<span title="running {{is_checker_worker}} worker processes"><span class="serverDown server-status"></span></span>
+			{% endif %}
 		{% endif %}
 		{% if role <= 1 %}
 			<a href="/app/viewlogs.py?viewlogs={{metrics_error_log_id}}&rows=10&grep=&hour=00&minut=00&hour1=24&minut1=00" title="View worker's logs" class="logs_link">
@@ -139,9 +158,13 @@
 		</td>
 		<td>
 		{% if checker_worker|int() >= 1 %}
-			<span title="running {{ checker_worker }} worker processes"><span class="serverUp server-status"></span>
+			<span title="running {{ checker_worker }} worker processes"><span class="serverUp server-status"></span></span>
 		{% else %}
-			<span title="running {{ checker_worker }} worker processes"><span class="serverDown server-status"></span> 
+			{% if is_checker_worker|int == 0 %}
+			<span title="There is not jobs for checker"><span class="serverNone server-status"></span> </span>
+			{% else %}
+			<span title="running {{ checker_worker }} worker processes"><span class="serverDown server-status"></span> </span>
+			{% endif %}
 		{% endif %}
 		{% if role <= 1 %}
 			<a href="/app/viewlogs.py?viewlogs={{checker_error_log_id}}&rows=10&grep=&hour=00&minut=00&hour1=24&minut1=00" title="View checker's logs" class="logs_link">
@@ -152,47 +175,77 @@
 		{% endif %}
 		</td>
 		<td>
-			{% if api|int() == 0 %}
-				<span class="serverNone server-status" title="REST API does not work"></span>
+			{% if smon == 'active' %}
+				<span title="SMON is started"><span class="serverUp server-status"></span></span>
+				<a href="/app/smon.py?action=view" title="SMON Dashboard" class="logs_link">
+					SMON
+				</a>
 			{% else %}
-				<span class="serverUp server-status" title="running {{api }} processes"></span>							
+				{% if smon == 'inactive' or smon== 'failed' %}
+					<span title="SMON is stoped"><span class="serverDown server-status"></span></span>
+					<a href="/app/users.py#services" title="Start SMON - HAProxy-WI service" class="logs_link">
+						SMON
+					</a>
+				{% else %}
+					<span title="SMON is not installed"><span class="serverNone server-status"></span></span>
+					<a href="https://haproxy-wi.org/services.py?service=smon" title="Simple monitoring ports installation" target="_blank" class="logs_link">
+						SMON
+					</a>
+				{% endif %}
 			{% endif %}
-			<a href="https://haproxy-wi.org/description.py?description=api" title="Read about REST API on HAProxy-WI.org" target="_blank" class="logs_link">
-				API	
-			</a>
 		</td>		
+	</tr>
+	<tr>
+		<td class="padding10 first-collumn-wi">
+		{% if grafana|int() >= 1 %}
+			<span title="running {{grafana}} process"><span class="serverUp server-status"></span></span> 
+			<a href="http://{{host}}:3000" target="_blank" title="Open Grafana" class="logs_link">Grafana</a>
+		{% else %}
+			<span title="The service does not started or does not installed"><span class="serverNone server-status"></span></span>
+			<span>Grafana</span>			
+		{% endif %}
+		</td>
+		<td>
+		{% if prometheus|int() >= 1 %}
+			<span title="running {{ prometheus }} process"><span class="serverUp server-status"></span></span>
+		{% else %}
+			<span title="The service does not started or does not installed"><span class="serverNone server-status" title="The service does not started or does not installed"></span></span> 
+		{% endif %}
+				<span>Prometheus</span>
+		</td>	
 	</tr>
 </table>
 {% if role <= 1 %}
 	<table class="overview-wi">
 		<tr class="overviewHead">
 			<td class="padding10 first-collumn-wi">Login</td>
-			<td class="second-collumn">Group</td>
+			<td class="second-collumn">Groups</td>
 			<td>Role</td>
 			<td>
 				<span class="add-button-wi">
-					<a title="Show all users" id="show-all-users" style="color: #fff">
+					<span title="Show all users" id="show-all-users" style="color: #fff">
 						Show all
-					</a>
+					</span>
 				</span>
 			</td>
 		</tr>		
-		{% set counter = 0 -%}
+		{% set counter = 0 %}
 		{% for USER in users %}
 			{% set counter = counter + loop.index0 %}
 			{% if counter <= 2 %}
 				<tr class="{{ loop.cycle('odd', 'even') }}">
 					<td class="padding10 first-collumn-wi"> 
 						<a href="users.py#users" title="Edit user" class="logs_link div-pic">
-							{{ USER.1 }}
-							
+							{{ USER.1 }}							
 						</a>
 					</td>
-					{% for group in groups %}
-						{% if USER.5 == group.0|string() %}
-							<td class="third-collumn-wi">{{ group.1 }}</td>
-						{% endif %}
-					{% endfor %}
+					<td class="third-collumn-wi">
+						{% for group in users_groups %}
+							{% if USER.0|string() == group.0|string() %}
+								{{ group.1 }}{{ "," if not loop.last }}
+							{% endif %}
+						{% endfor %}
+					</td>
 					<td colspan="2">{{ USER.4 }}</td>
 				</tr>
 			{% else %}
@@ -202,11 +255,13 @@
 							{{ USER.1 }}
 						</a>
 					</td>
-					{% for group in groups %}
-						{% if group.0|string() == USER.5 %}
-							<td class="third-collumn-wi">{{ group.1 }}</td>
-						{% endif %}
-					{% endfor %}
+					<td class="third-collumn-wi">
+						{% for group in users_groups %}
+							{% if group.0|string() == USER.0|string() %}
+								{{ group.1 }}{{ "," if not loop.last }}
+							{% endif %}
+						{% endfor %}
+					</td>
 					<td colspan="2">{{ USER.4 }}</td>
 				</tr>
 			{% endif %}
@@ -216,12 +271,12 @@
 	<table class="overview-wi">
 		<tr class="overviewHead">
 			<td class="padding10 first-collumn-wi">Group</td> 
-			<td class="second-collumn" style="width: 40%">Desctiption</td>
+			<td class="second-collumn" style="width: 40%">Description</td>
 			<td>
 			<span class="add-button-wi">
-					<a title="Show all groups" id="show-all-groups" style="color: #fff">
+					<span title="Show all groups" id="show-all-groups" style="color: #fff">
 						Show all
-					</a>
+					</span>
 				</span>
 			</td>
 		</tr>		
@@ -253,7 +308,7 @@
 	<table class="overview-wi">
 		<tr class="overviewHead">
 			<td class="padding10 first-collumn-wi">Role</td> 
-			<td class="second-collumn" style="width: 50%">Desctiption</td>
+			<td class="second-collumn" style="width: 50%">Description</td>
 			<td></td>
 			<td></td>
 		</tr>		
@@ -278,9 +333,9 @@
 			</td> 
 			<td>
 				<span class="add-button-wi">
-					<a title="Show more log" id="show-all-haproxy-wi-log" style="color: #fff">
+					<span title="Show more log" id="show-all-haproxy-wi-log" style="color: #fff">
 						Show more log
-					</a>
+					</span>
 				</span>
 			</td>
 		</tr>		

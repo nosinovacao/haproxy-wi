@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block content %}	
 <br />
+{% if selects|length == 0 %}
+	{% include 'include/getstarted.html' %}
+{% else %}
 <form style="padding-left: 5px;" action="viewsttats.py" method="post">
 	<input type="hidden" id="service" value="{{service}}" />
 	<select autofocus required name="serv" id="serv">
@@ -40,7 +43,6 @@
 		$('.v_menu').css('left', '200px');		
 		$('table.tbl th.pxname').css('width', '100%');
 		$('a.px:link').css('color', '#fff');
-		$('td').css('font-family', '-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol');
 		$('td').css('font-size', '11');
 		$('h1').css('display', 'none');
 		$('td').css('border-color', '#ddd');
@@ -52,6 +54,7 @@
 		$('h1').next().next().css('display', 'none');	  
 		$('h1').next().next().next().css('display', 'none');	  
 		$('h1').next().next().next().next().css('display', 'none');	  
+		$('body').css('font-family', '-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol');	  
 		$( "select" ).selectmenu();
 		{% if role == 3 %}
 			$('input[type=checkbox]').remove()	
@@ -76,4 +79,5 @@
 	});		
 </script>
 <link href="/inc/style.css" rel="stylesheet">
+{% endif %}
 {% endblock %}

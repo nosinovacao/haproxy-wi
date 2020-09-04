@@ -3,7 +3,8 @@ import subprocess
 from subprocess import check_output, CalledProcessError
 import time
 import argparse
-import os, sys
+import os
+import sys
 sys.path.append(os.path.join(sys.path[0], os.path.dirname(os.getcwd())))
 sys.path.append(os.path.join(sys.path[0], os.getcwd()))
 import funct
@@ -40,6 +41,7 @@ def main(serv, port):
 
 			firstrun = False				
 			old_stat_service = cur_stat_service
+			time.sleep(60)	
 			continue
 		except OSError as e:
 			print(e)
@@ -73,11 +75,10 @@ def main(serv, port):
 					servername = servername.split(",")
 					realserver = servername[0]
 					server = servername[1]
-					alert = "Backend: "+realserver[2:]+", server: "+server+"  has changed status and is now "+ currentstat[i] + " at " + serv 
+					alert = "Backend: "+realserver[2:]+", server: "+server+"  has changed status to "+ currentstat[i] + " on " + serv + " HAProxy"
 					funct.telegram_send_mess(str(alert), ip=serv)
 					funct.logging("localhost", " "+alert, alerting=1)
 		firstrun = False
-		oldstat = []
 		oldstat = currentstat
 		currentstat = []
 		time.sleep(60)	

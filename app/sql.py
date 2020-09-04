@@ -7,7 +7,7 @@ mysql_enable = funct.get_config_var('mysql', 'enable')
 if mysql_enable == '1':	
 	import mysql.connector as sqltool
 else:
-	db = "/var/www/haproxy-wi/app/haproxy-wi.db"
+	db = "haproxy-wi.db"
 	import sqlite3 as sqltool
 	
 	
@@ -31,12 +31,12 @@ def get_cur():
 		return con, cur
 		
 	
-def add_user(user, email, password, role, group, activeuser):
+def add_user(user, email, password, role, activeuser):
 	con, cur = get_cur()
 	if password != 'aduser':
-		sql = """INSERT INTO user (username, email, password, role, groups, activeuser) VALUES ('%s', '%s', '%s', '%s', '%s', '%s')""" % (user, email, funct.get_hash(password), role, group, activeuser)
+		sql = """INSERT INTO user (username, email, password, role, activeuser) VALUES ('%s', '%s', '%s', '%s', '%s')""" % (user, email, funct.get_hash(password), role, activeuser)
 	else:
-		sql = """INSERT INTO user (username, email, role, groups, ldap_user, activeuser) VALUES ('%s', '%s', '%s', '%s', '1', '%s')""" % (user, email, role, group, activeuser)		
+		sql = """INSERT INTO user (username, email, role, ldap_user, activeuser) VALUES ('%s', '%s', '%s', '1', '%s')""" % (user, email, role, activeuser)		
 	try:    
 		cur.execute(sql)
 		con.commit()
@@ -49,14 +49,47 @@ def add_user(user, email, password, role, group, activeuser):
 	cur.close()    
 	con.close()   
 	
-def update_user(user, email, role, group, id, activeuser):
+	
+def update_user(user, email, role, id, activeuser):
 	con, cur = get_cur()
 	sql = """update user set username = '%s', 
 			email = '%s',
-			role = '%s', 
-			groups = '%s',
+			role = '%s',
 			activeuser = '%s'
-			where id = '%s'""" % (user, email,  role, group, activeuser, id)
+			where id = '%s'""" % (user, email,  role, activeuser, id)
+	try:    
+		cur.execute(sql)
+		con.commit()
+	except sqltool.Error as e:
+		funct.out_error(e)
+		con.rollback()
+		return False
+	else:
+		return True
+	cur.close()    
+	con.close()
+	
+	
+def update_user_groups(groups, id):
+	con, cur = get_cur()
+	sql = """insert into user_groups(user_id, user_group_id) values('%s', '%s')""" % (id, groups)
+	try:    
+		cur.execute(sql)
+		con.commit()
+	except sqltool.Error as e:
+		funct.out_error(e)
+		con.rollback()
+		return False
+	else:
+		return True
+	cur.close()    
+	con.close()
+	
+	
+def delete_user_groups(id):
+	con, cur = get_cur()
+	sql = """delete from user_groups
+			where user_id = '%s'""" % (id)
 	try:    
 		cur.execute(sql)
 		con.commit()
@@ -252,6 +285,9 @@ def select_users(**kwargs):
 		sql = """select * from user where username='%s' """ % kwargs.get("user")
 	if kwargs.get("id") is not None:
 		sql = """select * from user where id='%s' """ % kwargs.get("id")
+	if kwargs.get("group") is not None:
+		sql = """ select user.* from user left join user_groups as groups on user.id = groups.user_id where groups.user_group_id = '%s' group by id;
+		""" % kwargs.get("group")
 	try:    
 		cur.execute(sql)
 	except sqltool.Error as e:
@@ -259,7 +295,57 @@ def select_users(**kwargs):
 	else:
 		return cur.fetchall()
 	cur.close()    
-	con.close()    
+	con.close()  
+
+
+def select_user_groups(id, **kwargs):
+	con, cur = get_cur()
+	sql = """select user_group_id from user_groups where user_id = '%s' """ % id
+	if kwargs.get("limit") is not None:
+		sql = """select user_group_id from user_groups where user_id = '%s' limit 1 """ % id
+	if kwargs.get("check_id") is not None:
+		sql = """select * from user_groups where user_id='%s' and user_group_id = '%s' """ % (id, kwargs.get("check_id"))
+	try:    
+		cur.execute(sql)
+	except sqltool.Error as e:
+		funct.out_error(e)
+	else:
+		if kwargs.get("check_id") is not None:
+			for g in cur.fetchall():
+				if g[0] is None:
+					return False
+				else:
+					return True
+		elif kwargs.get("limit") is not None:
+			for g in cur.fetchall():
+				return g[0]	
+		else:
+			return cur.fetchall()
+	cur.close()    
+	con.close() 
+
+
+def select_user_groups_with_names(id, **kwargs):
+	con, cur = get_cur()
+	if kwargs.get("all") is not None:
+		sql = """select user_groups.user_id, groups.name from user_groups 
+			left join groups as groups on user_groups.user_group_id = groups.id """
+	else:
+		sql = """select user_groups.user_group_id, groups.name from user_groups 
+			left join groups as groups on user_groups.user_group_id = groups.id 
+			where user_groups.user_id = '%s' """ % id
+	try:    
+		cur.execute(sql)
+	except sqltool.Error as e:
+		funct.out_error(e)
+	else:
+		if kwargs.get("limit") is not None:
+			for g in cur.fetchall():
+				return g[0]	
+		else:
+			return cur.fetchall()
+	cur.close()    
+	con.close() 		
 	
 	
 def select_groups(**kwargs):
@@ -398,6 +484,7 @@ def get_token(uuid):
 	cur.close()    
 	con.close()
 	
+	
 def delete_uuid(uuid):
 	con, cur = get_cur()
 	sql = """ delete from uuid where uuid = '%s' """ % uuid
@@ -408,6 +495,7 @@ def delete_uuid(uuid):
 		pass
 	cur.close()    
 	con.close() 
+	
 	
 def delete_old_uuid():
 	con, cur = get_cur()
@@ -427,6 +515,7 @@ def delete_old_uuid():
 	cur.close()    
 	con.close()		
 
+
 def update_last_act_user(uuid):
 	con, cur = get_cur()
 	session_ttl = get_setting('session_ttl')
@@ -444,6 +533,7 @@ def update_last_act_user(uuid):
 	cur.close()    
 	con.close()
 	
+	
 def get_user_name_by_uuid(uuid):
 	con, cur = get_cur()
 	sql = """ select user.username from user left join uuid as uuid on user.id = uuid.user_id where uuid.uuid = '%s' """ % uuid
@@ -457,6 +547,20 @@ def get_user_name_by_uuid(uuid):
 	cur.close()    
 	con.close() 
 
+
+def get_user_id_by_uuid(uuid):
+	con, cur = get_cur()
+	sql = """ select user.id from user left join uuid as uuid on user.id = uuid.user_id where uuid.uuid = '%s' """ % uuid
+	try:
+		cur.execute(sql)		
+	except sqltool.Error as e:
+		funct.out_error(e)
+	else:
+		for user_id in cur.fetchall():
+			return user_id[0]
+	cur.close()    
+	con.close() 
+	
 	
 def get_user_role_by_uuid(uuid):
 	con, cur = get_cur()
@@ -487,19 +591,6 @@ def get_role_id_by_name(name):
 	cur.close()    
 	con.close() 
 	
-	
-def get_user_group_by_uuid(uuid):
-	con, cur = get_cur()
-	sql = """ select user.groups from user left join uuid as uuid on user.id = uuid.user_id  where uuid.uuid = '%s' """ % uuid
-	try:
-		cur.execute(sql)		
-	except sqltool.Error as e:
-		funct.out_error(e)
-	else:
-		for user_id in cur.fetchall():
-			return user_id[0]
-	cur.close()    
-	con.close() 
 
 def get_user_telegram_by_uuid(uuid):
 	con, cur = get_cur()
@@ -511,8 +602,22 @@ def get_user_telegram_by_uuid(uuid):
 	else:
 		return cur.fetchall()
 	cur.close()    
-	con.close() 	
-	
+	con.close()
+
+
+def get_user_telegram_by_group(group):
+	con, cur = get_cur()
+	sql = """ select telegram.* from telegram where groups = '%s' """ % group
+	try:
+		cur.execute(sql)
+	except sqltool.Error as e:
+		funct.out_error(e)
+	else:
+		return cur.fetchall()
+	cur.close()
+	con.close()
+
+
 def get_telegram_by_ip(ip):
 	con, cur = get_cur()
 	sql = """ select telegram.* from telegram left join servers as serv on serv.groups = telegram.groups where serv.ip = '%s' """ % ip
@@ -525,22 +630,38 @@ def get_telegram_by_ip(ip):
 	cur.close()    
 	con.close()
 
+
+def get_telegram_by_id(id):
+	con, cur = get_cur()
+	sql = """ select * from telegram where id = '%s' """ % id
+	try:
+		cur.execute(sql)
+	except sqltool.Error as e:
+		funct.out_error(e)
+	else:
+		return cur.fetchall()
+	cur.close()
+	con.close()
+
+
 def get_dick_permit(**kwargs):
 	import http.cookies
 	import os
-	cookie = http.cookies.SimpleCookie(os.environ.get("HTTP_COOKIE"))
-	user_id = cookie.get('uuid')
+	if kwargs.get('username'):
+		user = kwargs.get('username')
+		grp = '1'
+	else:
+		cookie = http.cookies.SimpleCookie(os.environ.get("HTTP_COOKIE"))
+		user_id = cookie.get('uuid')
+		group = cookie.get('group')
+		grp = group.value
+		user = get_user_id_by_uuid(user_id.value)
 	disable = ''
 	haproxy = ''
 	nginx = ''
 	keepalived = ''
 	ip = ''
 	
-	con, cur = get_cur()
-	if kwargs.get('username'):
-		sql = """ select * from user where username = '%s' """ % kwargs.get('username')
-	else:
-		sql = """ select * from user where username = '%s' """ % get_user_name_by_uuid(user_id.value)
 	if kwargs.get('virt'):
 		type_ip = "" 
 	else:
@@ -555,18 +676,15 @@ def get_dick_permit(**kwargs):
 		nginx = "and nginx = 1"
 	if kwargs.get('keepalived'):
 		nginx = "and keepalived = 1"
-				
-	try:    
-		cur.execute(sql)
-	except sqltool.Error as e:
-		print("An error occurred:", e)
-	else:
-		for group in cur:
-			if group[5] == '1':
-				sql = """ select * from servers where enable = 1 %s %s %s """ % (disable, type_ip, nginx)
-			else:
-				sql = """ select * from servers where groups like '%{group}%' and (enable = 1 {disable}) {type_ip} {ip} {haproxy} {nginx} {keepalived} 
-				""".format(group=group[5], disable=disable, type_ip=type_ip, ip=ip, haproxy=haproxy, nginx=nginx, keepalived=keepalived)		
+
+	if select_user_groups(user, check_id=grp):
+		con, cur = get_cur()
+		if grp == '1':
+			sql = """ select * from servers where enable = 1 %s %s %s order by pos""" % (disable, type_ip, nginx)
+		else:
+			sql = """ select * from servers where groups = '{group}' and (enable = 1 {disable}) {type_ip} {ip} {haproxy} {nginx} {keepalived} order by pos
+			""".format(group=grp, disable=disable, type_ip=type_ip, ip=ip, haproxy=haproxy, nginx=nginx, keepalived=keepalived)		
+
 		try:   
 			cur.execute(sql)
 		except sqltool.Error as e:
@@ -574,8 +692,11 @@ def get_dick_permit(**kwargs):
 		else:
 			return cur.fetchall()
 	
-	cur.close()    
-	con.close() 
+		cur.close()    
+		con.close() 
+	else:
+		print('Atata!')
+	
 	
 	
 def is_master(ip, **kwargs):
@@ -1045,7 +1166,10 @@ def select_waf_servers_metrics(uuid, **kwargs):
 	
 def select_waf_metrics(serv, **kwargs):
 	con, cur = get_cur()
-	sql = """ select * from (select * from waf_metrics where serv = '%s' order by `date` desc limit 60) order by `date`""" % serv
+	if mysql_enable == '1':
+		sql = """ select * from waf_metrics where serv = '%s' order by `date` desc limit 60 """ % serv
+	else:
+		sql = """ select * from (select * from waf_metrics where serv = '%s' order by `date` desc limit 60) order by `date`""" % serv
 	try:    
 		cur.execute(sql)
 	except sqltool.Error as e:
@@ -1067,7 +1191,65 @@ def insert_waf_metrics_enable(serv, enable):
 		con.rollback()
 	cur.close()    
 	con.close()
-	
+
+def insert_waf_rules(serv):
+	con, cur = get_cur()
+	sql = list()
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Ignore static', 'modsecurity_crs_10_ignore_static.conf', 'This ruleset will skip all tests for media files, but will skip only the request body phase (phase 2) for text files. To skip the outbound stage for text files, add file 47 (skip_outbound_checks) to your configuration, in addition to this fileth/aws/login');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Brute force protection', 'modsecurity_crs_11_brute_force.conf', 'Anti-Automation Rule for specific Pages (Brute Force Protection) This is a rate-limiting rule set and does not directly correlate whether the authentication attempt was successful or not');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'DOS Protections', 'modsecurity_crs_11_dos_protection.conf', 'Enforce an existing IP address block and log only 1-time/minute. We do not want to get flooded by alerts during an attack or scan so we are only triggering an alert once/minute.  You can adjust how often you want to receive status alerts by changing the expirevar setting below');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Proxy abuse', 'modsecurity_crs_11_proxy_abuse.conf', 'Rule set for detecting Open Proxy Abuse/Chaining');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Slow DOS protection', 'modsecurity_crs_11_slow_dos_protection.conf', 'Rule set for detecting Slow HTTP Denial of Service Attacks');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'XML enabler', 'modsecurity_crs_13_xml_enabler.conf', 'The rules in this file will trigger the XML parser upon an XML request');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Session hijacking', 'modsecurity_crs_16_session_hijacking.conf', 'This rule file will identify outbound Set-Cookie/Set-Cookie2 response headers and then initiate the proper ModSecurity session persistent collection (setsid). The rules in this file are required if you plan to run other checks such as  Session Hijacking, Missing HTTPOnly flag, etc...');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Protocol violations', 'modsecurity_crs_20_protocol_violations.conf', 'Some protocol violations are common in application layer attacks. Validating HTTP requests eliminates a large number of application layer attacks. The purpose of this rules file is to enforce HTTP RFC requirements that state how  the client is supposed to interact with the server. http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Protocol anomalies', 'modsecurity_crs_21_protocol_anomalies.conf', 'Some common HTTP usage patterns are indicative of attacks but may also be used by non-browsers for legitimate uses. Do not accept requests without common headers. All normal web browsers include Host, User-Agent and Accept headers. Implies either an attacker or a legitimate automation client');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Detect CC#', 'modsecurity_crs_25_cc_known.conf', 'Detect CC# in input, log transaction and sanitize');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'CC traker', 'modsecurity_crs_25_cc_track_pan.conf', 'Credit Card Track 1 and 2 and PAN Leakage Checks');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'HTTP policy', 'modsecurity_crs_30_http_policy.conf', 'HTTP policy enforcement The HTTP policy enforcement rule set sets limitations on the use of HTTP by clients. Few applications require the breadth and depth of the HTTP protocol. On the other hand many attacks abuse valid but rare HTTP use patterns. Restricting  HTTP protocol usage is effective in therefore effective in blocking many  application layer attacks');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Bad robots', 'modsecurity_crs_35_bad_robots.conf', 'Bad robots detection is based on checking elements easily controlled by the client. As such a determined attacked can bypass those checks. Therefore bad robots detection should not be viewed as a security mechanism against targeted attacks but rather as a nuisance reduction, eliminating most of the random attacks against your web site');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'OS Injection Attacks', 'modsecurity_crs_40_generic_attacks.conf', 'OS Command Injection Attacks');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'SQL injection', 'modsecurity_crs_41_sql_injection_attacks.conf', 'SQL injection protection');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'XSS Protections', 'modsecurity_crs_41_xss_attacks.conf', 'XSS attacks protection');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Comment spam', 'modsecurity_crs_42_comment_spam.conf', 'Comment spam is an attack against blogs, guestbooks, wikis and other types of interactive web sites that accept and display hyperlinks submitted by visitors. The spammers automatically post specially crafted random comments which include links that point to the spammer\'s web site. The links artificially increas the site's search engine ranking and may make the site more noticable in search results.');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'CSP enforcement', 'modsecurity_crs_42_csp_enforcement.conf', 'The purpose of these settings is to send CSP response headers to Mozilla FireFox users so that you can enforce how dynamic content is used. CSP usage helps to prevent XSS attacks against your users.');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'CSRF Protections', 'modsecurity_crs_43_csrf_protection.conf', 'You must have also activated the session hijacking conf file as it initiates the Session Collection and creates the CSRF token');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Trojans Protections', 'modsecurity_crs_45_trojans.conf ', 'The trojan access detection rules detects access to known Trojans already installed on a server. Uploading of Trojans is part of the Anti-Virus rules  and uses external Anti Virus program when uploading files. Detection of Trojans access is especially important in a hosting environment where the actual Trojan upload may be done through valid methods and not through hacking');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Joomla Protections', 'modsecurity_crs_46_slr_et_joomla_attacks.conf', 'Use this if you have Joomla CMS');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'RFI Protections', 'modsecurity_crs_46_slr_et_lfi_attacks.conf', 'Remote file inclusion is an attack targeting vulnerabilities in web applications that dynamically reference external scripts. The perpetrator’s goal is to exploit the referencing function in an application to upload malware (e.g., backdoor shells) from a remote URL located within a different domain');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'phpBB Protections', 'modsecurity_crs_46_slr_et_phpbb_attacks.conf', 'Use this if you have phpBB forum');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'RFI Protections 2', 'modsecurity_crs_46_slr_et_rfi_attacks.conf', 'Remote file inclusion is an attack targeting vulnerabilities in web applications that dynamically reference external scripts. The perpetrator’s goal is to exploit the referencing function in an application to upload malware (e.g., backdoor shells) from a remote URL located within a different domain');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'SQLi Protections', ' modsecurity_crs_46_slr_et_sqli_attacks.conf', 'SQLi injection attacks protection');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Wordpress Protections', 'modsecurity_crs_46_slr_et_wordpress_attacks.conf', 'Use this if you have Wordpess CMS');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'XSS Protections 2', 'modsecurity_crs_46_slr_et_xss_attacks.conf', 'XSS attacks protection');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Common exceptions', 'modsecurity_crs_47_common_exceptions.conf', 'This file is used as an exception mechanism to remove common false positives that may be encountered');" % serv)
+	sql.append("INSERT  INTO waf_rules (serv, rule_name, rule_file, `desc`) values('%s', 'Hader tagging', 'modsecurity_crs_49_header_tagging.conf', 'This file will add Request Header Tagging which allows ModSecurity to communicate any event/rule matches it finds with the downstream application server.  The concept is similar to that of Anti-SPAM apps for Email (such as SpamAssassin). The idea is that if the WAF is in a DetectionOnly mode, it can still share data with the destination app server and then the app server may choose to inspect the new WAF request headers and factor in this data into a possible blocking decision. This concept is tremendously useful in a distributed architecture and/or when there are Fraud Detection Systems at the app server layer that can correlate the WAF data into the overall Fraud Score.  This is also useful in Hosting Environments where the decision to block may not be as clear');" % serv)
+	for i in sql:
+		try:
+			cur.execute(i)
+			con.commit()
+		except sqltool.Error as e:
+			pass
+	else:
+		if kwargs.get('silent') != 1:
+			print('Updating... one more for version 4.0.0')
+		return True
+	cur.close()
+	con.close()
+
+
+def select_waf_rules(serv):
+	con, cur = get_cur()
+	sql = """ select id, rule_name, en, `desc` from waf_rules where serv = '%s' """ % serv
+	try:
+		cur.execute(sql)
+	except sqltool.Error as e:
+		funct.out_error(e)
+	else:
+		return cur.fetchall()
+	cur.close()
+	con.close()
+
 	
 def delete_waf_server(id):
 	con, cur = get_cur()
@@ -1145,7 +1327,10 @@ def delete_mentrics():
 	
 def select_metrics(serv, **kwargs):
 	con, cur = get_cur()
-	sql = """ select * from (select * from metrics where serv = '%s' order by `date` desc limit 60) order by `date` """ % serv
+	if mysql_enable == '1':
+		sql = """ select * from metrics where serv = '%s' order by `date` desc limit 60 """ % serv
+	else:
+		sql = """ select * from (select * from metrics where serv = '%s' order by `date` desc limit 60) order by `date` """ % serv
 	try:    
 		cur.execute(sql)
 	except sqltool.Error as e:
@@ -1171,18 +1356,18 @@ def select_servers_metrics_for_master():
 	
 def select_servers_metrics(uuid, **kwargs):
 	con, cur = get_cur()
-	sql = """ select * from user where username = '%s' """ % get_user_name_by_uuid(uuid)
-
-	try:    
-		cur.execute(sql)
-	except sqltool.Error as e:
-		print("An error occurred:", e)
-	else:
-		for group in cur:
-			if group[5] == '1':
-				sql = """ select ip from servers where enable = 1 and metrics = '1' """
-			else:
-				sql = """ select ip from servers where groups like '%{group}%' and metrics = '1'""".format(group=group[5])		
+	import http.cookies
+	import os
+	cookie = http.cookies.SimpleCookie(os.environ.get("HTTP_COOKIE"))
+	user_id = cookie.get('uuid')
+	group = cookie.get('group')
+	group = group.value
+	id = get_user_id_by_uuid(user_id.value)
+	if select_user_groups(id, check_id=group) is not None:
+		if group == '1':
+			sql = """ select ip from servers where enable = 1 and metrics = '1' """
+		else:
+			sql = """ select ip from servers where groups like '%{group}%' and metrics = '1'""".format(group=group)		
 		try:   
 			cur.execute(sql)
 		except sqltool.Error as e:
@@ -1195,19 +1380,18 @@ def select_servers_metrics(uuid, **kwargs):
 	
 def select_table_metrics(uuid):
 	con, cur = get_cur()
-	groups = ""
-	sql = """ select * from user where username = '%s' """ % get_user_name_by_uuid(uuid)
-	
-	try:    
-		cur.execute(sql)
-	except sqltool.Error as e:
-		print("An error occurred:", e)
-	else:
-		for group in cur:
-			if group[5] == '1':
-				groups = ""
-			else:
-				groups = "and servers.groups like '%{group}%' ".format(group=group[5])
+	import http.cookies
+	import os
+	cookie = http.cookies.SimpleCookie(os.environ.get("HTTP_COOKIE"))
+	user_id = cookie.get('uuid')
+	group = cookie.get('group')
+	group = group.value
+	id = get_user_id_by_uuid(user_id.value)
+	if select_user_groups(id, check_id=group) is not None:
+		if group == '1':
+			groups = ""
+		else:
+			groups = "and servers.groups like '%{group}%' ".format(group=group)
 	if mysql_enable == '1':
 		sql = """
                 select ip.ip, hostname, avg_sess_1h, avg_sess_24h, avg_sess_3d, max_sess_1h, max_sess_24h, max_sess_3d, avg_cur_1h, avg_cur_24h, avg_cur_3d, max_con_1h, max_con_24h, max_con_3d from
@@ -1570,6 +1754,21 @@ def update_haproxy(serv):
 	con.close()
 	
 	
+def update_server_pos(pos, id):
+	con, cur = get_cur()
+	sql = """ update servers set 
+			pos = '%s'
+			where id = '%s'""" % (pos, id)
+	try:    
+		cur.execute(sql)
+		con.commit()
+	except sqltool.Error as e:
+		funct.out_error(e)
+		con.rollback()
+	cur.close()    
+	con.close()
+	
+	
 def check_token_exists(token):
 	try:
 		import http.cookies
@@ -1591,7 +1790,269 @@ def check_token_exists(token):
 			funct.logging('localhost', ' Cannot check token', haproxywi=1)
 			return False
 
-			
+
+def insert_smon(server, port, enable, proto, uri, body, group, desc, telegram, user_group):
+	try:
+		http = proto+':'+uri
+	except:
+		http = ''
+	con, cur = get_cur()
+	sql = """INSERT INTO smon (ip, port, en, `desc`, `group`, http, body, telegram_channel_id, user_group, `status`) 
+			VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '3')
+			""" % (server, port, enable, desc, group, http, body, telegram, user_group)
+	try:
+		cur.execute(sql)
+		con.commit()
+	except sqltool.Error as e:
+		funct.out_error(e)
+		con.rollback()
+		return False
+	else:
+		return True
+	cur.close()
+	con.close()
+
+
+def select_smon(user_group, **kwargs):
+	con, cur = get_cur()
+
+	if user_group == '1':
+		user_group = ''
+	else:
+		if kwargs.get('ip'):
+			user_group = "and user_group = '%s'" % user_group
+		else:
+			user_group = "where user_group='%s'" % user_group
+
+	if kwargs.get('ip'):
+		try:
+			http = kwargs.get('proto')+':'+kwargs.get('uri')
+		except:
+			http = ''
+		sql = """select id, ip, port, en, http, body, telegram_channel_id, `desc`, `group`, user_group from smon 
+		where ip='%s' and port='%s' and http='%s' and body='%s' %s 
+		""" % (kwargs.get('ip'), kwargs.get('port'), http, kwargs.get('body'), user_group)
+	elif kwargs.get('action') == 'add':
+		sql = """select id, ip, port, en, http, body, telegram_channel_id, `desc`, `group`, user_group from smon
+		%s order by `group`""" % user_group
+	else:
+		sql = """select * from `smon` %s """ % user_group
+	try:
+		cur.execute(sql)
+	except sqltool.Error as e:
+		funct.out_error(e)
+	else:
+		return cur.fetchall()
+	cur.close()
+	con.close()
+
+
+def delete_smon(id, user_group):
+	con, cur = get_cur()
+	sql = """delete from smon
+			where id = '%s' and user_group = '%s' """ % (id, user_group)
+	try:
+		cur.execute(sql)
+		con.commit()
+	except sqltool.Error as e:
+		funct.out_error(e)
+		con.rollback()
+		return False
+	else:
+		return True
+	cur.close()
+	con.close()
+
+
+def update_smon(id, ip, port, body, telegram, group, desc, en):
+	con, cur = get_cur()
+	sql = """ update smon set 
+			ip = '%s',
+			port = '%s',
+			body = '%s',
+			telegram_channel_id = '%s',
+			`group` = '%s',
+			`desc` = '%s',
+			en = '%s'
+			where id = '%s'""" % (ip, port, body, telegram, group, desc, en, id)
+	try:
+		cur.execute(sql)
+		con.commit()
+		return True
+	except sqltool.Error as e:
+		funct.out_error(e)
+		con.rollback()
+		return False
+	cur.close()
+	con.close()
+
+def select_en_service():
+	con, cur = get_cur()
+	sql = """ select ip, port, telegram_channel_id, id from smon where en = 1"""
+	try:
+		cur.execute(sql)
+	except sqltool.Error as e:
+		out_error(e)
+	else:
+		return cur.fetchall()
+
+
+def select_status(id):
+	con, cur = get_cur()
+	sql = """ select status from smon where id = '%s' """ % (id)
+	try:
+		cur.execute(sql)
+	except sqltool.Error as e:
+		print("An error occurred:", e)
+	else:
+		for status in cur:
+			return status[0]
+
+
+def select_http_status(id):
+	con, cur = get_cur()
+	sql = """ select http_status from smon where id = '%s' """ % (id)
+	try:
+		cur.execute(sql)
+	except sqltool.Error as e:
+		print("An error occurred:", e)
+	else:
+		for status in cur:
+			return status[0]
+
+
+def select_body_status(id):
+	con, cur = get_cur()
+	sql = """ select body_status from smon where id = '%s' """ % (id)
+	try:
+		cur.execute(sql)
+	except sqltool.Error as e:
+		print("An error occurred:", e)
+	else:
+		for status in cur:
+			return status[0]
+
+
+def select_script(id):
+	con, cur = get_cur()
+	sql = """ select script from smon where id = '%s' """ % (id)
+	try:
+		cur.execute(sql)
+	except sqltool.Error as e:
+		print("An error occurred:", e)
+	else:
+		for script in cur:
+			return script[0]
+
+
+def select_http(id):
+	con, cur = get_cur()
+	sql = """ select http from smon where id = '%s' """ % (id)
+	try:
+		cur.execute(sql)
+	except sqltool.Error as e:
+		print("An error occurred:", e)
+	else:
+		for script in cur:
+			return script[0]
+
+
+def select_body(id):
+	con, cur = get_cur()
+	sql = """ select body from smon where id = '%s' """ % (id)
+	try:
+		cur.execute(sql)
+	except sqltool.Error as e:
+		print("An error occurred:", e)
+	else:
+		for script in cur:
+			return script[0]
+
+
+def change_status(status, id):
+	con, cur = get_cur()
+	sql = """ update smon set status = '%s' where id = '%s' """ % (status, id)
+	try:
+		cur.executescript(sql)
+	except sqltool.Error as e:
+		print("An error occurred:", e)
+	cur.close()
+	con.close()
+
+
+def change_http_status(status, id):
+	con, cur = get_cur()
+	sql = """ update smon set http_status = '%s' where id = '%s' """ % (status, id)
+	try:
+		cur.executescript(sql)
+	except sqltool.Error as e:
+		print("An error occurred:", e)
+	cur.close()
+	con.close()
+
+
+def change_body_status(status, id):
+	con, cur = get_cur()
+	sql = """ update smon set body_status = '%s' where id = '%s' """ % (status, id)
+	try:
+		cur.executescript(sql)
+	except sqltool.Error as e:
+		print("An error occurred:", e)
+	cur.close()
+	con.close()
+
+
+def add_sec_to_state_time(time, id):
+	con, cur = get_cur()
+	sql = """ update smon set time_state = '%s' where id = '%s' """ % (time, id)
+	try:
+		cur.executescript(sql)
+	except sqltool.Error as e:
+		print("An error occurred:", e)
+	cur.close()
+	con.close()
+
+
+def set_to_zero_time_state(id):
+	con, cur = get_cur()
+	sql = """ update smon set time_state = 0 where id = '%s' """ % (id)
+	try:
+		cur.executescript(sql)
+	except sqltool.Error as e:
+		print("An error occurred:", e)
+	cur.close()
+	con.close()
+
+
+def response_time(time, id):
+	con, cur = get_cur()
+	sql = """ update smon set response_time = '%s' where id = '%s' """ % (time, id)
+	try:
+		cur.executescript(sql)
+	except sqltool.Error as e:
+		print("An error occurred:", e)
+	cur.close()
+	con.close()
+
+
+def smon_list(user_group):
+	con, cur = get_cur()
+
+	if user_group == '1':
+		user_group = ''
+	else:
+		user_group = "where user_group='%s'" % user_group
+
+	sql = """ select ip,port,status,en,`desc`,response_time,time_state,`group`,script,http,http_status,body,body_status 
+	from smon %s order by `group` desc """ % user_group
+	try:
+		cur.execute(sql)
+	except sqltool.Error as e:
+		out_error(e)
+	else:
+		return cur.fetchall()
+
+
 form = funct.form
 error_mess = '<span class="alert alert-danger" id="error">All fields must be completed <a title="Close" id="errorMess"><b>X</b></a></span>'
 

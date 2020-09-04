@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import cgi
 import os
 import sys
 import funct
@@ -31,14 +30,25 @@ def send_cookie(login):
 	expires = datetime.datetime.utcnow() + datetime.timedelta(days=session_ttl) 
 	user_uuid = str(uuid.uuid4())
 	user_token = str(uuid.uuid4())
+	sql.write_user_uuid(login, user_uuid)
+	sql.write_user_token(login, user_token)
+	
+	id = sql.get_user_id_by_uuid(user_uuid)
+	user_groups = sql.select_user_groups(id, limit=1)
 
 	c = http.cookies.SimpleCookie(os.environ.get("HTTP_COOKIE"))
 	c["uuid"] = user_uuid
 	c["uuid"]["path"] = "/"
+	# c["uuid"]["sameSite"] = "Strict"
+	c["uuid"]["Secure"] = "True"
 	c["uuid"]["expires"] = expires.strftime("%a, %d %b %Y %H:%M:%S GMT")
+	c["group"] = user_groups
+	c["group"]["path"] = "/"
+	# c["group"]["sameSite"] = "Strict"
+	c["group"]["Secure"] = "True"
+	c["group"]["expires"] = expires.strftime("%a, %d %b %Y %H:%M:%S GMT")
 	print(c)
-	sql.write_user_uuid(login, user_uuid)
-	sql.write_user_token(login, user_token)
+	
 	try:
 		funct.logging('locahost', ' '+sql.get_user_name_by_uuid(user_uuid)+' log in', haproxywi=1)
 	except:
@@ -53,6 +63,8 @@ def ban():
 	expires = datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
 	c["ban"] = 1
 	c["ban"]["path"] = "/"
+	# c["ban"]["sameSite"] = "Strict"
+	c["ban"]["Secure"] = "True"
 	c["ban"]["expires"] = expires.strftime("%a, %d %b %Y %H:%M:%S GMT")
 	try:
 		funct.logging('locahost', login+' failed log in', haproxywi=1, login=1)
@@ -75,8 +87,11 @@ def check_in_ldap(user, password):
 	domain = sql.get_setting('ldap_domain')
 	ldap_search_field = sql.get_setting('ldap_search_field')
 	ldap_user_attribute = sql.get_setting('ldap_user_attribute')
+	ldap_type = sql.get_setting('ldap_type')
 	
-	l = ldap.initialize('ldap://{}:{}/'.format(server, port))
+	ldap_proto = 'ldap' if ldap_type == "0" else 'ldaps'
+	
+	l = ldap.initialize('{}://{}:{}/'.format(ldap_proto,server, port))
 	try:
 		l.protocol_version = ldap.VERSION3
 		l.set_option(ldap.OPT_REFERRALS, 0)

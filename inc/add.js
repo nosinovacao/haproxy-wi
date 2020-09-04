@@ -1,11 +1,7 @@
 var ssl_offloading_var = "http-request set-header X-Forwarded-Port %[dst_port] \n"+
 						"http-request add-header X-Forwarded-Proto https if { ssl_fc } \n"+
 						"redirect scheme https if !{ ssl_fc } \n"
-$( function() {	
-	$('#close').click(function(){
-		$('.alert-success').remove();
-		$('.alert-danger').remove();
-	});
+$( function() {
 	$( "#listen-mode-select" ).on('selectmenuchange',function()  {
 		if ($( "#listen-mode-select option:selected" ).val() == "tcp") {
 			$( "#https-listen-span" ).hide("fast");
@@ -222,7 +218,7 @@ $( function() {
 	
 	
 	var availableTags = [
-		"acl", "http-request", "http-response", "set-uri", "set-url", "set-header", "add-header", "del-header", "replace-header", "path_beg", "url_beg()", "urlp_sub()", "set cookie", "dynamic-cookie-key", "mysql-check", "tcpka", "tcplog", "forwardfor", "option"
+		"acl", "hdr(host)", "hdr_beg(host)", "hdr_dom(host)", "http-request", "http-response", "set-uri", "set-url", "set-header", "add-header", "del-header", "replace-header", "path_beg", "url_beg()", "urlp_sub()", "set cookie", "dynamic-cookie-key", "mysql-check", "tcpka", "tcplog", "forwardfor", "option"
 	];
 			
 	$( "#ip" ).autocomplete({
@@ -355,7 +351,8 @@ $( function() {
 	    minLength: -1,
 		select: function( event, ui ) {
 			$("#optionsInput").append(ui.item.value + " ");
-			$("#options").empty();
+			$(this).val('');
+			return false;
 		}
 	});
 	$( "#saved-options" ).autocomplete({
@@ -365,8 +362,8 @@ $( function() {
 	    minLength: 1,
 		select: function( event, ui ) {
 			$("#optionsInput").append(ui.item.value + " \n");
-			$(this).val('');	
-			$(this).autocomplete( "close" );
+			$(this).val('');
+			return false;
 		}
 	});
 	$( "#options1" ).autocomplete({
@@ -374,9 +371,12 @@ $( function() {
 		autoFocus: true,
 	    minLength: -1,
 		select: function( event, ui ) {
-			$("#optionsInput1").append(ui.item.value + " ")
+			$("#optionsInput1").append(ui.item.value + " ");
+			$(this).val('');
+			return false; 
 		}
 	});
+	
 	$( "#saved-options1" ).autocomplete({
 		dataType: "json",
 		source: "sql.py?getoption="+$('#group').val()+'&token='+$('#token').val(),
@@ -384,8 +384,8 @@ $( function() {
 	    minLength: 1,
 		select: function( event, ui ) {
 			$("#optionsInput1").append(ui.item.value + " \n");	
-			$(this).val('');	
-			$(this).autocomplete( "close" );		
+			$(this).val('');
+			return false;		
 		}
 	});
 	$( "#options2" ).autocomplete({
@@ -393,7 +393,9 @@ $( function() {
 		autoFocus: true,
 	    minLength: -1,
 		select: function( event, ui ) {
-			$("#optionsInput2").append(ui.item.value + " ")
+			$("#optionsInput2").append(ui.item.value + " ");
+			$(this).val('');
+			return false;
 		}
 	});
 	$( "#saved-options2" ).autocomplete({
@@ -403,8 +405,8 @@ $( function() {
 	    minLength: 1,
 		select: function( event, ui ) {
 			$("#optionsInput2").append(ui.item.value + " \n");	
-			$(this).val('');	
-			$(this).autocomplete( "close" );	
+			$(this).val('');
+			return false;
 		}
 	});
 	$('#add-option-button').click(function() {
@@ -413,8 +415,6 @@ $( function() {
 		} 
 	});
 	$('#add-option-new').click(function() {
-		$('#error').remove();	
-		$('.alert-danger').remove();	
 		$.ajax( {
 			
 			url: "sql.py",
@@ -425,12 +425,8 @@ $( function() {
 			},
 			type: "POST",
 			success: function( data ) {
-				if (data.indexOf('error') != '-1') {
-					$("#ajax-option").append(data);
-					$('#errorMess').click(function() {
-						$('#error').remove();
-						$('.alert-danger').remove();
-					});
+				if (data.indexOf('error:') != '-1') {
+					toastr.error(data);
 				} else {
 					$("#option_table").append(data);
 					setTimeout(function() {
@@ -466,8 +462,6 @@ $( function() {
 		} 
 	});
 	$('#add-saved-server-new').click(function() {
-		$('#error').remove();	
-		$('.alert-danger').remove();	
 		$.ajax( {
 			
 			url: "sql.py",
@@ -479,12 +473,8 @@ $( function() {
 			},
 			type: "POST",
 			success: function( data ) {
-				if (data.indexOf('error') != '-1') {
-					$("#ajax-option").append(data);
-					$('#errorMess').click(function() {
-						$('#error').remove();
-						$('.alert-danger').remove();
-					});
+				if (data.indexOf('error:') != '-1') {
+					toastr.error(data);
 				} else {
 					$("#servers_table").append(data);
 					setTimeout(function() {
@@ -573,7 +563,7 @@ $( function() {
 		if($('#name').val() == "") {
 			$("#optionsInput").append(ddos_var)
 		}
-		var ddos_var = "#Start config for DDOS atack protecte\n"+
+		var ddos_var = "#Start config for DDOS atack protect\n"+
 								  "stick-table type ip size 1m expire 1m store gpc0,http_req_rate(10s),http_err_rate(10s)\n"+
 								  "tcp-request connection track-sc1 src\n"+
 								  "tcp-request connection reject if { sc1_get_gpc0 gt 0 }\n"+
@@ -596,7 +586,7 @@ $( function() {
 		if($('#new_frontend').val() == "") {
 			$("#optionsInput1").append(ddos_var)
 		}
-		var ddos_var = "#Start config for DDOS atack protecte\n"+
+		var ddos_var = "#Start config for DDOS atack protect\n"+
 								  "stick-table type ip size 1m expire 1m store gpc0,http_req_rate(10s),http_err_rate(10s)\n"+
 								  "tcp-request connection track-sc1 src\n"+
 								  "tcp-request connection reject if { sc1_get_gpc0 gt 0 }\n"+
@@ -670,7 +660,54 @@ $( function() {
 		$( "#serv3" ).on('selectmenuchange',function() {
 			change_select_acceleration("3");
 		});
-		
+		$('#compression').on( "click", function() {
+			if ($('#compression').is(':checked')) {
+				$("#cache").checkboxradio( "disable" );
+				$("#cache").prop('checked', false);
+			} else {
+				change_select_acceleration("");
+			}
+		});
+		$('#compression2').on( "click", function() {
+			if ($('#compression2').is(':checked')) {
+				$("#cache2").checkboxradio( "disable" );
+				$("#cache2").prop('checked', false);
+			} else {
+				change_select_acceleration('2');
+			}
+		});
+		$('#compression3').on( "click", function() {
+			if ($('#compression3').is(':checked')) {
+				$("#cache3").checkboxradio( "disable" );
+				$("#cache3").prop('checked', false);
+			} else {
+				change_select_acceleration('3');
+			}
+		});
+		$('#cache').on( "click", function() {
+			if ($('#cache').is(':checked')) {
+				$("#compression").checkboxradio( "disable" );
+				$("#compression").prop('checked', false);
+			} else {
+				$("#compression").checkboxradio( "enable" );
+			}
+		});
+		$('#cache2').on( "click", function() {
+			if ($('#cache2').is(':checked')) {
+				$("#compression2").checkboxradio( "disable" );
+				$("#compression2").prop('checked', false);
+			} else {
+				$("#compression2").checkboxradio( "enable" );
+			}
+		});
+		$('#cache3').on( "click", function() {
+			if ($('#cache3').is(':checked')) {
+				$("#compression3").checkboxradio( "disable" );
+				$("#compression3").prop('checked', false);
+			} else {
+				$("#compression3").checkboxradio( "enable" );
+			}
+		});
 		$( "#add1" ).on( "click", function() {
 			$('.menu li ul li').each(function () {
 				$(this).find('a').css('padding-left', '20px')
@@ -746,7 +783,6 @@ $( function() {
 		minLength: -1
 	});
 	$( "#ssl_key_upload" ).click(function() {
-		$('.alert-danger').remove();
 		$.ajax( {
 			url: "options.py",
 			data: {
@@ -758,13 +794,12 @@ $( function() {
 			type: "POST",
 			success: function( data ) {
 				data = data.replace(/\s+/g,' ');
-				if (data.indexOf('danger') != '-1') {
-					$("#ajax-ssl").html(data);
+				if (data.indexOf('error:') != '-1') {
+					toastr.error(data);
 				} else if (data.indexOf('success') != '-1') {
-					$('.alert-danger').remove();
-					$( "#ajax-ssl").html(data);
+					toastr.success(data);
 				} else {
-					$("#ajax-ssl").html('<div class="alert alert-danger">Something wrong, check and try again</div>');
+					toastr.error('Something wrong, check and try again');
 				}
 			}
 		} );
@@ -779,10 +814,9 @@ $( function() {
 			},
 			type: "POST",
 			success: function( data ) {
-				if (data.indexOf('danger') != '-1') {
-					$("#ajax-show-ssl").html(data);
+				if (data.indexOf('error:') != '-1') {
+					toastr.error(data);
 				} else {
-					$('.alert-danger').remove();
 					var i;
 					var new_data = "";
 					data = data.split("\n");
@@ -909,6 +943,8 @@ function resetProxySettings() {
 	$('[id^=https-hide]').hide();
 	$('[name=mode').val('http');
 	$('select').selectmenu('refresh');
+	$("#path-cert-listen" ).attr('required',false);
+	$("#path-cert-frontend" ).attr('required',false);
 	replace_text("#optionsInput", ssl_offloading_var);
 	replace_text("#optionsInput1", ssl_offloading_var);
 	replace_text("#optionsInput2", ssl_offloading_var);
@@ -927,7 +963,8 @@ function createSsl(TabId, proxy) {
 	$( "#tabs" ).tabs( "option", "active", TabId );
 	$( "#https-hide-"+proxy).show("fast");
 	$('#https-'+proxy).prop( "checked", true );
-	$('#https-'+proxy).checkboxradio("refresh")
+	$('#https-'+proxy).checkboxradio("refresh");
+	$("#path-cert-"+proxy ).attr('required',true);
 	history.pushState('Add'+proxy, 'Add'+proxy, 'add.py#'+proxy)
 }
 function createHttps(TabId, proxy) {
@@ -976,7 +1013,7 @@ function removeOption(id) {
 	} );
 }
 function updateOptions(id) {
-	$('#error').remove();	
+	toastr.clear();
 	$.ajax( {
 		url: "sql.py",
 		data: {
@@ -987,14 +1024,9 @@ function updateOptions(id) {
 		type: "POST",
 		success: function( data ) {
 			data = data.replace(/\s+/g,' ');
-			if (data.indexOf('error') != '-1') {
-				$("#ajax-ssh").append(data);
-				$('#errorMess').click(function() {
-					$('#error').remove();
-					$('.alert-danger').remove();
-				});
+			if (data.indexOf('error:') != '-1') {
+				toastr.error(data);
 			} else {
-				$('.alert-danger').remove();
 				$("#option-"+id).addClass( "update", 1000 );
 				setTimeout(function() {
 					$( "#option-"+id ).removeClass( "update" );
@@ -1039,7 +1071,7 @@ function removeSavedServer(id) {
 	} );
 }
 function updateSavedServer(id) {
-	$('#error').remove();	
+	toastr.clear();
 	$.ajax( {
 		url: "sql.py",
 		data: {
@@ -1051,14 +1083,9 @@ function updateSavedServer(id) {
 		type: "POST",
 		success: function( data ) {
 			data = data.replace(/\s+/g,' ');
-			if (data.indexOf('error') != '-1') {
-				$("#ajax-ssh").append(data);
-				$('#errorMess').click(function() {
-					$('#error').remove();
-					$('.alert-danger').remove();
-				});
+			if (data.indexOf('error:') != '-1') {
+				toastr.error(data);
 			} else {
-				$('.alert-danger').remove();
 				$("#option-"+id).addClass( "update", 1000 );
 				setTimeout(function() {
 					$( "#option-"+id ).removeClass( "update" );
@@ -1077,10 +1104,9 @@ function view_ssl(id) {
 		},
 		type: "POST",
 		success: function( data ) {
-			if (data.indexOf('danger') != '-1') {
-				$("#ajax-show-ssl").html(data);
+			if (data.indexOf('error:') != '-1') {
+				toastr.error(data);
 			} else {
-				$('.alert-danger').remove();
 				$('#dialog-confirm-body').text(data);
 				$( "#dialog-confirm-cert" ).dialog({
 					resizable: false,
@@ -1107,8 +1133,9 @@ function change_select_acceleration(id) {
 			token: $('#token').val()
 		},
 		type: "POST",
-		success: function( data ) {	
-			if(parseFloat(data) < parseFloat('1.8')) {	
+		success: function( data ) {
+			data = data.replace(/\s+/g,' ');
+			if(parseFloat(data) < parseFloat('1.8') || data == ' ') {
 				$("#cache"+id).checkboxradio( "disable" );
 			} else {
 				$("#cache"+id).checkboxradio( "enable" );
@@ -1150,10 +1177,19 @@ function createList(color) {
 		},
 		type: "POST",
 		success: function( data ) {
-			$("#ajax").html(data); 
-			setTimeout(function() {
-						location.reload();
-					}, 2500 );			 
+			if (data.indexOf('error:') != '-1' || data.indexOf('Failed') != '-1') {
+				toastr.error(data);
+			} else if (data.indexOf('Info') != '-1' ){
+				toastr.clear();
+				toastr.info(data);
+			} else if (data.indexOf('success') != '-1' ) {
+				toastr.clear();
+				toastr.success('WAF service has installed');
+				showOverviewWaf(ip, hostnamea)
+				setTimeout(function () {
+					location.reload();
+				}, 2500);
+			}
 		}
 	} );	
 }
@@ -1168,10 +1204,9 @@ function editList(list, color) {
 		},
 		type: "POST",
 		success: function( data ) {
-			if (data.indexOf('danger') != '-1') {
-				$("#ajax").html(data);
+			if (data.indexOf('error:') != '-1') {
+				toastr.error(data);
 			} else {
-				$('.alert-danger').remove();
 				$('#edit_lists').text(data);
 				$( "#dialog-confirm-cert-edit" ).dialog({
 					resizable: false,
@@ -1183,6 +1218,10 @@ function editList(list, color) {
 						"Just save": function() {
 							$( this ).dialog( "close" );	
 							saveList('save', list, color);
+						},
+						"Save and reload": function() {
+							$( this ).dialog( "close" );	
+							saveList('reload', list, color);
 						},
 						"Save and restart": function() {
 							$( this ).dialog( "close" );	
@@ -1202,6 +1241,7 @@ function saveList(action, list, color) {
 		url: "options.py",
 		data: {
 			bwlists_save: list,
+			serv: $( "#serv-"+color+"-list option:selected" ).val(),
 			bwlists_content: $('#edit_lists').val(),
 			color: color,
 			group: $('#group').val(),
@@ -1210,7 +1250,17 @@ function saveList(action, list, color) {
 		},
 		type: "POST",
 		success: function( data ) {
-			$("#ajax").html(data); 
+			data = data.split(" , ");
+
+			for (i = 0; i < data.length; i++) {
+				if (data[i]) {
+					if (data[i].indexOf('error:') != '-1') {
+						toastr.error(data[i]);
+					} else {
+						toastr.success(data[i]);
+					}
+				}
+			}
 		}
 	} );	
 }
