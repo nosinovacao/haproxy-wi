@@ -1,4 +1,4 @@
-FROM ubuntu
+FROM ubuntu:18.04
 
 ENV MYSQL_ENABLE 0
 ENV MYSQL_USER "haproxy-wi"
@@ -16,8 +16,10 @@ ENV LANG C
 ENV APACHE_ULIMIT_MAX_FILES 'ulimit -n 65536'
 
 RUN apt-get update && \
-    apt-get install net-tools lshw dos2unix apache2 gcc netcat python3.5 python3-pip g++ freetype2-demos libatlas-base-dev python-ldap libpq-dev python-dev libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev libffi-dev python3-dev libssl-dev libfreetype6-dev libpng-dev -y && \
-    ln -s /usr/include/freetype2/ft2build.h /usr/include/
+    #apt-get install net-tools lshw dos2unix apache2 gcc netcat python3.5 python3-pip g++ freetype2-demos libatlas-base-dev python-ldap libpq-dev python-dev libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev libffi-dev python3-dev libssl-dev libfreetype6-dev libpng-dev -y && \
+    apt-get install net-tools lshw dos2unix apache2 python3-pip g++ freetype2-demos libatlas-base-dev apache2-ssl-dev netcat python3 python3-ldap libpq-dev python-dev libpython-dev libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev libffi-dev python3-dev libssl-dev gcc rsync ansible libpng-dev libqhull-dev libfreetype6-dev libagg-dev pkg-config -y && \
+    ln -s /usr/include/freetype2/ft2build.h /usr/include/ && \
+    pip3 install --upgrade pip
 
 COPY . /var/www/haproxy-wi
 
